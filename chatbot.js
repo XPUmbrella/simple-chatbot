@@ -7,7 +7,8 @@ function sendMessage() {
 
   const botReply = getBotReply(userText);
   chatlog.innerHTML += `<div><strong>You:</strong> ${userText}</div>`;
-  chatlog.innerHTML += `<div><strong>Bot:</strong> ${botReply}</div>`;
+  chatlog.innerHTML += `<div><strong>Bot:</strong> ${botReply},add:const utter = new SpeechSynthesisUtterance(botReply);
+speechSynthesis.speak(utter);/div>`;
   input.value = "";
   chatlog.scrollTop = chatlog.scrollHeight;
 }
