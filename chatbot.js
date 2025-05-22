@@ -7,11 +7,11 @@ function sendMessage() {
 
   const botReply = getBotReply(userText);
   chatlog.innerHTML += `<div><strong>You:</strong> ${userText}</div>`;
-  chatlog.innerHTML += `<div><strong>Bot:</strong> ${botReply},add:const utter = new SpeechSynthesisUtterance(botReply);
-speechSynthesis.speak(utter);/div>`;
+  chatlog.innerHTML += `<div><strong>Bot:</strong> ${botReply}</div>`;
   input.value = "";
   chatlog.scrollTop = chatlog.scrollHeight;
-}
+  const utter = new SpeechSynthesisUtterance(botReply);
+speechSynthesis.speak(utter);}
 
 function getBotReply(message) {
   const msg = message.toLowerCase();
