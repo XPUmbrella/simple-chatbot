@@ -1,3 +1,30 @@
+// Existing chatbot code...
+
+function startListening() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert("Sorry, your browser does not support speech recognition.");
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('userInput').value = transcript;
+    sendMessage();
+  };
+
+  recognition.onerror = function(event) {
+    alert('Speech recognition error: ' + event.error);
+  };
+
+  recognition.start();
+}
+
+// ...rest of your chatbot code...
 function speakText(text) {
   if (typeof text !== 'string' || !text.trim()) return;
 
