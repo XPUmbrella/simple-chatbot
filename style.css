@@ -1,3 +1,12 @@
+/* Royal blue with 60% opacity for the chatbot window */
+#chatlog {
+  background: rgba(65, 105, 225, 0.6);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 16px rgba(65, 105, 225, 0.15);
+  color: #fff; /* White text for contrast */
+}
+
 body {
   font-family: Arial, sans-serif;
   display: flex;
