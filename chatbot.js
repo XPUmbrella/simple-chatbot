@@ -19,3 +19,9 @@ function getBotReply(message) {
   if (msg.includes("bye")) return "Goodbye!";
   return "I didn't understand that. Try saying 'hello' or 'bye'.";
 }
+document.getElementById("userInput").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault(); // prevent form submission (if any)
+    sendMessage();
+  }
+});
