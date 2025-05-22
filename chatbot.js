@@ -1,3 +1,18 @@
+function speakText(text) {
+  if (typeof text !== 'string' || !text.trim()) return;
+
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+  }
+
+  const utterance = new window.SpeechSynthesisUtterance(text);
+
+  utterance.onerror = (event) => {
+    console.error('Speech synthesis error:', event.error);
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
 function sendMessage() {
   const input = document.getElementById("userInput");
   const chatlog = document.getElementById("chatlog");
