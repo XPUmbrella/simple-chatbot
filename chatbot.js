@@ -24,4 +24,12 @@ document.getElementById("userInput").addEventListener("keypress", function(event
     event.preventDefault(); // prevent form submission (if any)
     sendMessage();
   }
-});
+  function startListening() {
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+  recognition.onresult = function(event) {
+    document.getElementById("userInput").value = event.results[0][0].transcript;
+    sendMessage();
+  };
+  recognition.start();
+}});
