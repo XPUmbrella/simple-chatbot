@@ -15,7 +15,7 @@ body {
   background: #f0f0f0;
 }
 .chatbox {
-  background: white;
+  background:  rgba(65, 105, 225, /*0.9/*);
   border-radius: 8px;
   padding: 20px;
   width: 300px;
