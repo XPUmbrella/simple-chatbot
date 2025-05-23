@@ -68,8 +68,8 @@ async function sendMessage() {
 
 // --- Hugging Face Inference API Call ---
 async function getBotReply(message) {
-  const API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
-  const hfApiKey = "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"; // <-- Replace with your key
+  const API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-3B";
+  const hfApiKey = "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"; // <-- Replace with your actual key!
 
   try {
     const response = await fetch(API_URL, {
@@ -87,7 +87,7 @@ async function getBotReply(message) {
     } else if (Array.isArray(data) && data.length && data[0].generated_text) {
       return data[0].generated_text;
     } else if (data.error) {
-      return "Sorry, the AI service is busy. Please try again in a moment.";
+      return "Sorry, the AI service is busy or your model is unavailable. Please try again in a moment.";
     } else {
       return "Sorry, I couldn't get a response from the AI.";
     }
