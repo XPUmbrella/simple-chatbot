@@ -68,11 +68,11 @@ async function sendMessage() {
 
 // --- Hugging Face Inference API Call ---
 async function getBotReply(message) {
- const API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
+  const API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
   const hfApiKey = "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"; // <-- Replace with your key
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${hfApiKey}`,
