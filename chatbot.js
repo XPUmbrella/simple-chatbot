@@ -1,21 +1,13 @@
-// chatbot.js
-// Simple chatbot using Hugging Face Inference API with error handling for 404
+// chatbot.js for GitHub Pages with Hugging Face gpt2 model
 
-// Use a model that is available for public inference.
-// As of 2025, facebook/blenderbot-400M-distill is generally available.
-// If you get a 404, you can use a more general text-generation model like gpt2.
-const API_URL = "https://api-inference.huggingface.co/models/gpt2"; // fallback to gpt2 for demo
+const API_URL = "https://api-inference.huggingface.co/models/gpt2";
+const API_KEY = "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"; // <-- Replace with your actual Hugging Face API key
 
-// INSERT YOUR HUGGING FACE API KEY BELOW
-const API_KEY = "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"; // <-- Replace with your Hugging Face API Key
-
-// DOM elements
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
 const chatArea = document.getElementById("chat-area");
 const loading = document.getElementById("loading");
 
-// Append message to chat UI
 function appendMessage(sender, message) {
   const div = document.createElement("div");
   div.className = sender;
@@ -24,17 +16,13 @@ function appendMessage(sender, message) {
   chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// Show loading indicator
 function showLoading() {
   if (loading) loading.style.display = "block";
 }
-
-// Hide loading indicator
 function hideLoading() {
   if (loading) loading.style.display = "none";
 }
 
-// Handle form submit
 chatForm.addEventListener("submit", function (e) {
   e.preventDefault();
   const userMessage = chatInput.value.trim();
@@ -44,7 +32,6 @@ chatForm.addEventListener("submit", function (e) {
   sendToBot(userMessage);
 });
 
-// Send message to Hugging Face API
 function sendToBot(text) {
   showLoading();
   fetch(API_URL, {
@@ -53,7 +40,7 @@ function sendToBot(text) {
       Authorization: `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ inputs: text }),
+    body: JSON.stringify({ inputs: text })
   })
     .then(async (res) => {
       hideLoading();
@@ -61,8 +48,9 @@ function sendToBot(text) {
         let errorMsg = `Error: ${res.status}`;
         if (res.status === 404) {
           errorMsg = "The chatbot model is unavailable (404). Please check the API URL or use another model.";
+        } else if (res.status === 401 || res.status === 403) {
+          errorMsg = "Invalid or missing Hugging Face API key.";
         }
-        // Try to parse error message from response
         try {
           const errJson = await res.json();
           if (errJson.error) errorMsg += `\n${errJson.error}`;
@@ -74,7 +62,6 @@ function sendToBot(text) {
     })
     .then((data) => {
       if (!data) return;
-      // For gpt2 or similar models, check for generated_text or array
       let botReply = "";
       if (Array.isArray(data) && data[0] && data[0].generated_text) {
         botReply = data[0].generated_text;
@@ -93,7 +80,6 @@ function sendToBot(text) {
     });
 }
 
-// Optional: Send on Enter (if not handled by the form)
 chatInput.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -101,7 +87,6 @@ chatInput.addEventListener("keydown", function (e) {
   }
 });
 
-// On load, greet the user
 window.addEventListener("DOMContentLoaded", function () {
   appendMessage("bot", "Hello! I'm your chatbot. How can I help you?");
 });
