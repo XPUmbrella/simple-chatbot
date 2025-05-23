@@ -1,22 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <form id="chat-form">
-  <input id="chat-input" autocomplete="off" placeholder="Type your message..." />
-  <button type="submit">Send</button>
-</form>
-<div id="loading" style="display:none;">Loading...</div>
-<div id="chat-area"></div>  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Simple Chatbot</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 24px 18px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+    }
+    #chat-area {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      margin-bottom: 18px;
+      padding: 8px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      min-height: 200px;
+      max-height: 60vh;
+      font-size: 15px;
+    }
+    .user {
+      background: #e0f7fa;
+      color: #006064;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 12px 12px 4px 12px;
+      align-self: flex-end;
+      max-width: 85%;
+      word-break: break-word;
+    }
+    .bot {
+      background: #f1f8e9;
+      color: #33691e;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 12px 12px 12px 4px;
+      align-self: flex-start;
+      max-width: 85%;
+      word-break: break-word;
+    }
+    .error {
+      background: #ffebee;
+      color: #b71c1c;
+      margin: 6px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      align-self: center;
+      max-width: 90%;
+      font-style: italic;
+      word-break: break-word;
+    }
+    #loading {
+      display: none;
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    #chat-form {
+      display: flex;
+      gap: 0.5em;
+      margin-top: 8px;
+    }
+    #chat-input {
+      flex: 1 1 auto;
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #chat-input:focus {
+      border-color: #00838f;
+    }
+    button[type="submit"] {
+      background: #00838f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button[type="submit"]:hover {
+      background: #005662;
+    }
+    @media (max-width: 600px) {
+      .container {
+        width: 98vw;
+        height: 98vh;
+        max-width: 100vw;
+        margin: 0;
+        padding: 8px 4px 6px 4px;
+      }
+      #chat-area {
+        max-height: 50vh;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="chatbox">
-    <div id="chatlog"></div>
-    <input type="text" id="userInput" placeholder="Say something..." autofocus>
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="startListening()">🎤 Listen</button>
+  <div class="container">
+    <div id="chat-area"></div>
+    <div id="loading">Loading...</div>
+    <form id="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" autocomplete="off" placeholder="Type your message..." required />
+      <button type="submit">Send</button>
+    </form>
   </div>
   <script src="chatbot.js"></script>
 </body>
