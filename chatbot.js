@@ -1,7 +1,5 @@
-// chatbot.js for GitHub Pages with Hugging Face gpt2 model
-
-const API_URL = "https://api-inference.huggingface.co/models/gpt2";
-const API_KEY = "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"; // <-- Replace with your actual Hugging Face API key
+const API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct";
+const API_KEY = "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"; // Replace with your key
 
 const chatForm = document.getElementById("chat-form");
 const chatInput = document.getElementById("chat-input");
