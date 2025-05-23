@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <form id="chat-form">
+  <input id="chat-input" autocomplete="off" placeholder="Type your message..." />
+  <button type="submit">Send</button>
+</form>
+<div id="loading" style="display:none;">Loading...</div>
+<div id="chat-area"></div>  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
   <title>Simple Chatbot</title>
   <link rel="stylesheet" href="style.css">
