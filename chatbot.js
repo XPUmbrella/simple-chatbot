@@ -1,4 +1,4 @@
-// Simple rule-based chatbot logic
+// Simple rule-based chatbot logic with speech synthesis
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
@@ -20,6 +20,20 @@ function appendMessage(sender, text) {
     msgDiv.textContent = text;
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+    // If the bot is speaking, use speech synthesis
+    if (sender === 'bot') {
+        speakText(text);
+    }
+}
+
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        // Stop any current speech
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US';
+        window.speechSynthesis.speak(utter);
+    }
 }
 
 chatForm.addEventListener('submit', function(e) {
