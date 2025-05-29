@@ -11,6 +11,12 @@ function getBotResponse(input) {
     if (msg.includes("help")) return "You can say hello, ask my name, or just chat with me!";
     if (msg.includes("how are you")) return "I'm just code, but I'm happy to chat! How are you?";
     if (msg.includes("bye")) return "Goodbye! Have a great day!";
+    // New responses below
+    if (msg.includes("joke")) return "Why did the developer go broke? Because he used up all his cache!";
+    if (msg.includes("thank")) return "You're welcome! 😊";
+    if (msg.includes("weather")) return "Sorry, I can't check the weather yet!";
+    if (msg.includes("time")) return "Sorry, I don't have a watch, but you can check your device's clock!";
+    if (msg.includes("creator")) return "I was created by XPUmbrella!";
     return "I'm not sure how to answer that. Try asking something else!";
 }
 
