@@ -1,15 +1,15 @@
-// Extensible, simple chatbot with voice + text input, in-browser code learning
+// Simple, extensible chatbot with voice + text input, in-browser code learning
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
 const micBtn = document.getElementById('mic-btn');
 
-// Q&A memory and code logic
+// Q&A memory and custom logic
 const memory = [];
 const customLogic = []; // {trigger, type: 'reply'|'code', value}
 
-// For learning new Q&A
+// For teaching the bot new things
 let awaitingAnswer = null;
 
 // Speech recognition setup
@@ -29,12 +29,12 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   recognition.onend = () => {
     recognizing = false;
     micBtn.classList.remove('listening');
-    userInput.placeholder = "Type or speak to me...";
+    userInput.placeholder = "Type or hold 🎤 to speak...";
   };
   recognition.onerror = (e) => {
     recognizing = false;
     micBtn.classList.remove('listening');
-    userInput.placeholder = "Type or speak to me...";
+    userInput.placeholder = "Type or hold 🎤 to speak...";
   };
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
@@ -43,7 +43,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   };
 }
 
-// Fuzzy matching
+// Fuzzy matching (simple, for learning)
 function getSimilarity(a, b) {
   const wa = new Set(a.toLowerCase().split(/\W+/));
   const wb = new Set(b.toLowerCase().split(/\W+/));
@@ -105,8 +105,8 @@ function getBotResponse(input) {
   // Built-in responses
   const low = msg.toLowerCase();
   if (low.includes("hello") || low.includes("hi")) return "Hello! How can I help you today?";
-  if (low.includes("name")) return "I'm your extensible chatbot!";
-  if (low.includes("help")) return 'You can say hello, ask my name, chat, or use: add:when I hear "something", reply with "something" or add:when I hear "something", run: <js code>';
+  if (low.includes("name")) return "I'm your simple chatbot!";
+  if (low.includes("help")) return 'You can chat, or teach me: "add:when I hear \\"something\\", reply with \\"something\\"" or "add:when I hear \\"something\\", run: <js code>". If I don\'t know an answer, just tell me!';
   if (low.includes("how are you")) return "I'm just code, but I'm happy to chat! How are you?";
   if (low.includes("bye")) return "Goodbye! Have a great day!";
 
@@ -172,3 +172,6 @@ if (recognition) {
 } else {
   micBtn.style.display = 'none';
 }
+
+// Greet on load
+setTimeout(() => appendMessage('bot', "Hi! I'm a simple chatbot. Type or hold 🎤 to speak. Type 'help' for instructions."), 400);
