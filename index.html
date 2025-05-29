@@ -2,20 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="chat-container">
-        <div id="chat-box" class="chat-box">
-            <!-- Chat messages will appear here -->
-        </div>
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Type your message...">
-            <button id="send-button">Send</button>
-        </div>
+        <div id="chat-box" class="chat-box"></div>
+        <form id="chat-form" autocomplete="off">
+            <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
     </div>
-    <script src="script.js"></script>
+    <script src="chatbot.js"></script>
 </body>
 </html>
