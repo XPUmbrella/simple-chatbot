@@ -1,79 +1,62 @@
 body {
+    background: #f6f6f6;
     font-family: Arial, sans-serif;
     display: flex;
-    justify-content: center;
+    height: 100vh;
     align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
+    justify-content: center;
 }
-
 .chat-container {
-    width: 90%;
-    max-width: 500px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    width: 350px;
+    max-width: 95vw;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    height: 70vh; /* Or adjust as preferred */
 }
-
 .chat-box {
-    flex-grow: 1;
-    padding: 15px;
+    height: 300px;
     overflow-y: auto;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
-}
-
-.message {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 10px;
     margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 15px;
+    background: #fafafa;
+    font-size: 15px;
+}
+.message {
+    margin: 6px 0;
     line-height: 1.5;
-    max-width: 75%;
-    word-wrap: break-word;
 }
-
-.user-message {
-    background-color: #007bff;
-    color: white;
-    align-self: flex-end; /* Messages from user on the right */
+.user {
+    color: #0078d7;
+    text-align: right;
 }
-
-.bot-message {
-    background-color: #e9ecef;
-    color: #333;
-    align-self: flex-start; /* Messages from bot on the left */
+.bot {
+    color: #444;
+    text-align: left;
 }
-
-.input-area {
+#chat-form {
     display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background-color: #f8f9fa;
 }
-
 #user-input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 20px; /* Rounded input field */
-    margin-right: 10px;
+    flex: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    font-size: 15px;
 }
-
-#send-button {
-    padding: 10px 20px;
+button {
+    padding: 8px 14px;
     border: none;
-    border-radius: 20px; /* Rounded button */
-    background-color: #007bff;
-    color: white;
+    background: #0078d7;
+    color: #fff;
+    border-radius: 5px;
+    margin-left: 5px;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
-
-#send-button:hover {
-    background-color: #0056b3;
+button:hover {
+    background: #005fa3;
 }
