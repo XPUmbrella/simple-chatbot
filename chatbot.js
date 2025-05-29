@@ -1,4 +1,4 @@
-// Simple rule-based chatbot logic with speech synthesis (speaks only bot response)
+// Simple rule-based chatbot logic with speech synthesis (only bot speaks)
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
@@ -21,7 +21,7 @@ function appendMessage(sender, text) {
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
     if (sender === 'bot') {
-        speakText(text);  // Only speaks bot responses
+        speakText(text); // Only the bot response is spoken
     }
 }
 
@@ -40,8 +40,8 @@ function speakText(text) {
 chatForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const input = userInput.value;
-    appendMessage('user', input); // Shows user text, but does not speak it
+    appendMessage('user', input); // Only displays user input, does NOT speak
     const response = getBotResponse(input);
-    setTimeout(() => appendMessage('bot', response), 500); // Only bot response is spoken
+    setTimeout(() => appendMessage('bot', response), 500); // Bot response is displayed and spoken
     userInput.value = '';
 });
