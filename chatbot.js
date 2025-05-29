@@ -1,4 +1,4 @@
-// Simple rule-based chatbot logic with speech synthesis (Chrome-compatible)
+// Simple rule-based chatbot logic with speech synthesis (speaks only bot response)
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
@@ -21,35 +21,27 @@ function appendMessage(sender, text) {
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
     if (sender === 'bot') {
-        speakText(text);
+        speakText(text);  // Only speaks bot responses
     }
 }
 
 function speakText(text) {
     if ('speechSynthesis' in window) {
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Stop any ongoing speech
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'en-US';
         utter.rate = 1;
         utter.pitch = 1;
         utter.volume = 1;
-        // Uncomment for debugging:
-        // utter.onstart = () => console.log("Speech started");
-        // utter.onend = () => console.log("Speech ended");
-        // utter.onerror = (e) => console.error("Speech error:", e.error);
         window.speechSynthesis.speak(utter);
-    } else {
-        // Uncomment for debugging:
-        // console.warn("Speech synthesis not supported");
     }
 }
 
 chatForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const input = userInput.value;
-    appendMessage('user', input);
+    appendMessage('user', input); // Shows user text, but does not speak it
     const response = getBotResponse(input);
-    setTimeout(() => appendMessage('bot', response), 500);
+    setTimeout(() => appendMessage('bot', response), 500); // Only bot response is spoken
     userInput.value = '';
 });
