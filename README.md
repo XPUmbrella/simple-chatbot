@@ -1,70 +1,54 @@
-# Simple Command-Line Chatbot
+# Simple Browser Chatbot
 
-This is a basic command-line chatbot that uses the Hugging Face Inference API to interact with a Large Language Model (LLM).
+This is a very simple chatbot that runs entirely in your web browser. It uses HTML, CSS, and JavaScript, and does not require any external APIs, backend servers, or API keys. Its responses are pre-programmed in the `script.js` file.
 
 ## Features
 
--   Connects to Hugging Face Inference API for LLM responses.
--   Uses a primary model (e.g., `mistralai/Mixtral-8x7B-Instruct-v0.1`) with a fallback to a smaller model (e.g., `gpt2-medium`).
--   Prompts for a Hugging Face API token or can use an environment variable (`HF_TOKEN`).
--   Simple interactive command-line interface.
+-   Runs completely client-side (in the browser).
+-   No external dependencies after downloading the files.
+-   Simple chat interface.
+-   Pre-programmed responses based on keywords in user input.
+-   Easy to modify by editing `script.js` to add more responses.
 
-## Setup and Running
+## How to Use
 
-1.  **Prerequisites:**
-    *   Python 3.7+ and pip.
+1.  **Download the files:**
+    *   `index.html`
+    *   `style.css`
+    *   `script.js`
+    Ensure these three files are in the same folder.
 
-2.  **Download the files:**
-    *   Ensure you have `chatbot.py` and `requirements.txt`.
+2.  **Open `index.html` in your web browser:**
+    *   Navigate to the folder where you saved the files.
+    *   Double-click `index.html`, or right-click and choose "Open with" your preferred web browser.
 
-3.  **Open your terminal or command prompt.**
+3.  **Chat:**
+    *   The chat interface will appear.
+    *   Type your message in the input field and click "Send" or press Enter.
+    *   The chatbot will respond based on its predefined rules.
 
-4.  **Navigate to the project's root directory** (where `chatbot.py` is located).
+## Customizing Responses
 
-5.  **Create and activate a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
-    # On macOS/Linux:
-    source venv/bin/activate
-    # On Windows (Command Prompt):
-    # venv\Scripts\activate
-    # On Windows (PowerShell):
-    # .\venv\Scripts\Activate.ps1
+To change or add to the chatbot's responses:
+
+1.  Open `script.js` in a text editor.
+2.  Find the `getBotResponse(userText)` function.
+3.  You can add more `else if` conditions to check for different phrases and provide new responses. For example:
+
+    ```javascript
+    // Inside getBotResponse function:
+    if (lowerUserText.includes('good morning')) {
+        return 'Good morning to you too!';
+    } else if (lowerUserText.includes('tell me a joke')) {
+        return 'Why did the scarecrow win an award? Because he was outstanding in his field!';
+    } 
+    // ... other rules
     ```
 
-6.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+4.  Save the `script.js` file and refresh `index.html` in your browser to see the changes.
 
-7.  **Set your Hugging Face API Token (Recommended):**
-    It's best to set your Hugging Face API token as an environment variable named `HF_TOKEN`.
-    *   On macOS/Linux:
-        ```bash
-        export HF_TOKEN="your_actual_hf_api_token"
-        ```
-    *   On Windows (Command Prompt):
-        ```bash
-        set HF_TOKEN=your_actual_hf_api_token
-        ```
-    *   On Windows (PowerShell):
-        ```powershell
-        $env:HF_TOKEN="your_actual_hf_api_token"
-        ```
-    Replace `"your_actual_hf_api_token"` with your token from [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (get a User Access Token, typically with "Read" permissions).
-    
-    If you don't set the environment variable, the script will prompt you to paste the token when you run it.
+## Files
 
-8.  **Run the chatbot script:**
-    ```bash
-    python chatbot.py
-    ```
-
-## Usage
-
--   If the `HF_TOKEN` environment variable is not set, the script will prompt you to enter it.
--   Once initialized, type your message and press Enter.
--   The chatbot's response will be displayed.
--   Type "quit" to exit the chatbot.
-
-```
+-   `index.html`: The main HTML file for the chat interface.
+-   `style.css`: Contains the CSS styles for the appearance of the chat.
+-   `script.js`: Contains the JavaScript logic, including how the bot generates responses.
