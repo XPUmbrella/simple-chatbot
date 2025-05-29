@@ -1,4 +1,4 @@
-// Simple rule-based chatbot logic with speech synthesis
+// Simple rule-based chatbot logic with speech synthesis (Chrome-compatible)
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
@@ -20,7 +20,6 @@ function appendMessage(sender, text) {
     msgDiv.textContent = text;
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-    // If the bot is speaking, use speech synthesis
     if (sender === 'bot') {
         speakText(text);
     }
@@ -28,11 +27,21 @@ function appendMessage(sender, text) {
 
 function speakText(text) {
     if ('speechSynthesis' in window) {
-        // Stop any current speech
+        // Cancel any ongoing speech
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'en-US';
+        utter.rate = 1;
+        utter.pitch = 1;
+        utter.volume = 1;
+        // Uncomment for debugging:
+        // utter.onstart = () => console.log("Speech started");
+        // utter.onend = () => console.log("Speech ended");
+        // utter.onerror = (e) => console.error("Speech error:", e.error);
         window.speechSynthesis.speak(utter);
+    } else {
+        // Uncomment for debugging:
+        // console.warn("Speech synthesis not supported");
     }
 }
 
