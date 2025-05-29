@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Smarter Learning Chatbot</title>
+  <title>Extensible Chatbot</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -10,8 +10,9 @@
   <div class="chat-container">
     <div id="chat-box" class="chat-box"></div>
     <form id="chat-form" autocomplete="off">
-      <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off" required />
+      <input type="text" id="user-input" placeholder="Type or speak to me..." autocomplete="off" required />
       <button type="submit">Send</button>
+      <button type="button" id="mic-btn" title="Hold to speak">🎤</button>
     </form>
   </div>
   <script src="chatbot.js"></script>
