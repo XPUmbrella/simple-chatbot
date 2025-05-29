@@ -1,62 +1,51 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
+// Simple chatbot logic with speech synthesis (only bot speaks)
 
-    sendButton.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-            sendMessage();
-        }
-    });
+const chatBox = document.getElementById('chat-box');
+const chatForm = document.getElementById('chat-form');
+const userInput = document.getElementById('user-input');
 
-    function sendMessage() {
-        const messageText = userInput.value.trim();
-        if (messageText === '') {
-            return;
-        }
+// Rule-based responses
+function getBotResponse(input) {
+    const msg = input.trim().toLowerCase();
+    if (msg.includes("hello") || msg.includes("hi")) return "Hello! How can I help you today?";
+    if (msg.includes("name")) return "I'm your simple chatbot! 🤖";
+    if (msg.includes("help")) return "You can say hello, ask my name, or just chat with me!";
+    if (msg.includes("how are you")) return "I'm just code, but I'm happy to chat! How are you?";
+    if (msg.includes("bye")) return "Goodbye! Have a great day!";
+    return "I'm not sure how to answer that. Try asking something else!";
+}
 
-        addMessageToChatBox(messageText, 'user');
-        userInput.value = ''; // Clear input field
-
-        // Get bot response
-        const botResponse = getBotResponse(messageText);
-        // Simulate a small delay for bot response
-        setTimeout(() => {
-            addMessageToChatBox(botResponse, 'bot');
-        }, 500);
+// Adds a message to the chat box and (if bot) speaks it
+function appendMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', sender);
+    msgDiv.textContent = text;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    if (sender === 'bot') {
+        speakText(text); // Only the bot's reply is spoken
     }
+}
 
-    function addMessageToChatBox(text, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', sender + '-message');
-        messageDiv.textContent = text;
-        chatBox.appendChild(messageDiv);
-        // Scroll to the bottom of the chat box
-        chatBox.scrollTop = chatBox.scrollHeight;
+// Uses browser speech synthesis to speak bot replies
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop any ongoing speech
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US';
+        utter.rate = 1;
+        utter.pitch = 1;
+        utter.volume = 1;
+        window.speechSynthesis.speak(utter);
     }
+}
 
-    function getBotResponse(userText) {
-        const lowerUserText = userText.toLowerCase();
-
-        if (lowerUserText.includes('hello') || lowerUserText.includes('hi')) {
-            return 'Hi there!';
-        } else if (lowerUserText.includes('how are you')) {
-            return "I'm doing well, thanks for asking!";
-        } else if (lowerUserText.includes('what is your name')) {
-            return "I'm a simple chatbot.";
-        } else if (lowerUserText.includes('bye')) {
-            return "Goodbye! Have a nice day!";
-        } else {
-            // Simple echo for anything not recognized, to make it slightly more interactive than a fixed "I don't understand"
-            // For a more traditional "I don't understand", use:
-            // return "Sorry, I didn't understand that. I can only respond to a few phrases like 'hello', 'how are you', 'what is your name', or 'bye'.";
-            return "You said: '" + userText + "'. I am a simple bot with limited responses.";
-        }
-    }
-
-    // Optional: Add a welcome message from the bot when the chat loads
-    setTimeout(() => {
-        addMessageToChatBox("Hello! I'm a simple chatbot. Try saying 'hello' or 'how are you'.", 'bot');
-    }, 200);
+// Handles form submission
+chatForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = userInput.value;
+    appendMessage('user', input); // Displays user input, never spoken
+    const response = getBotResponse(input);
+    setTimeout(() => appendMessage('bot', response), 500); // Bot reply is displayed and spoken
+    userInput.value = '';
 });
