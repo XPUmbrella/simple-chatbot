@@ -1,45 +1,63 @@
-// Smarter local chatbot: remembers Q&A pairs, does fuzzy matching, speaks replies
+// "Smarter" local chatbot: learns Q&A pairs, fuzzy matches, asks for answers, speaks
 
 const chatBox = document.getElementById('chat-box');
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
 
-const memory = []; // {user: "...", bot: "..."}
+// In-memory Q&A database
+const memory = []; // {question: "...", answer: "..."}
 
-function getSimilarity(str1, str2) {
+let awaitingAnswer = null; // Tracks if bot is waiting for user's answer to a question
+
+function getSimilarity(a, b) {
   // Jaccard similarity over words
-  const set1 = new Set(str1.toLowerCase().split(/\W+/));
-  const set2 = new Set(str2.toLowerCase().split(/\W+/));
-  const intersection = new Set([...set1].filter(x => set2.has(x)));
-  const union = new Set([...set1, ...set2]);
-  return intersection.size / union.size || 0;
+  const wa = new Set(a.toLowerCase().split(/\W+/));
+  const wb = new Set(b.toLowerCase().split(/\W+/));
+  const intersection = new Set([...wa].filter(x => wb.has(x)));
+  const union = new Set([...wa, ...wb]);
+  return intersection.size / (union.size || 1);
+}
+
+function findBestMatch(question) {
+  let best = null, bestScore = 0.5; // similarity threshold
+  for (const pair of memory) {
+    const score = getSimilarity(question, pair.question);
+    if (score > bestScore) {
+      bestScore = score;
+      best = pair;
+    }
+  }
+  return best;
 }
 
 function getBotResponse(input) {
-  const msg = input.trim().toLowerCase();
+  const msg = input.trim();
 
-  // Rule-based responses
-  if (msg.includes("hello") || msg.includes("hi")) return "Hello! How can I help you today?";
-  if (msg.includes("name")) return "I'm your learning chatbot!";
-  if (msg.includes("help")) return "You can say hello, ask my name, or just chat with me!";
-  if (msg.includes("how are you")) return "I'm just code, but I'm happy to chat! How are you?";
-  if (msg.includes("bye")) return "Goodbye! Have a great day!";
-
-  // Fuzzy match: look for similar past user questions
-  let bestMatch = null, bestScore = 0.5; // threshold
-  for (let entry of memory) {
-    const score = getSimilarity(msg, entry.user.toLowerCase());
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = entry;
-    }
-  }
-  if (bestMatch) {
-    return `Earlier you asked something like "${bestMatch.user}". My reply was: "${bestMatch.bot}"`;
+  // If bot is waiting for answer to last unknown question
+  if (awaitingAnswer) {
+    memory.push({ question: awaitingAnswer, answer: msg });
+    const reply = `Thank you! I'll remember that "${awaitingAnswer}" means "${msg}".`;
+    awaitingAnswer = null;
+    return reply;
   }
 
-  // If not recognized, remember it and say it back next time
-  return "I'm not sure how to answer that yet, but I'll remember you said: \"" + input + "\"";
+  // Built-in simple responses
+  const low = msg.toLowerCase();
+  if (low.includes("hello") || low.includes("hi")) return "Hello! How can I help you today?";
+  if (low.includes("name")) return "I'm your learning chatbot!";
+  if (low.includes("help")) return "You can say hello, ask my name, or just chat with me!";
+  if (low.includes("how are you")) return "I'm just code, but I'm happy to chat! How are you?";
+  if (low.includes("bye")) return "Goodbye! Have a great day!";
+
+  // Look for best match in memory
+  const best = findBestMatch(msg);
+  if (best) {
+    return best.answer;
+  }
+
+  // If not known, ask user to teach
+  awaitingAnswer = msg;
+  return `I don't know how to respond to "${msg}". What should I reply if someone asks me that?`;
 }
 
 function appendMessage(sender, text) {
@@ -69,11 +87,7 @@ chatForm.addEventListener('submit', function(e) {
   e.preventDefault();
   const input = userInput.value;
   appendMessage('user', input);
-
-  // Store user message
   const response = getBotResponse(input);
-  memory.push({ user: input, bot: response });
-
   setTimeout(() => appendMessage('bot', response), 500);
   userInput.value = '';
 });
