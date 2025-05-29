@@ -15,7 +15,11 @@ function getBotResponse(input) {
     if (msg.includes("joke")) return "Why did the developer go broke? Because he used up all his cache!";
     if (msg.includes("thank")) return "You're welcome! 😊";
     if (msg.includes("weather")) return "Sorry, I can't check the weather yet!";
-    if (msg.includes("time")) return "Sorry, I don't have a watch, but you can check your device's clock!";
+    // New time response
+    if (msg.includes("time")) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        return `The current time is ${timeString}.`;
     if (msg.includes("creator")) return "I was created by XPUmbrella!";
     return "I'm not sure how to answer that. Try asking something else!";
 }
