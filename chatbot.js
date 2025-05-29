@@ -1,105 +1,62 @@
-// --- Speech Recognition ---
-function startListening() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert("Sorry, your browser does not support speech recognition.");
-    return;
-  }
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+document.addEventListener('DOMContentLoaded', () => {
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
 
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    document.getElementById('userInput').value = transcript;
-    sendMessage();
-  };
-
-  recognition.onerror = function(event) {
-    alert('Speech recognition error: ' + event.error);
-  };
-
-  recognition.start();
-}
-
-// --- Speech Synthesis ---
-function speakText(text) {
-  if (typeof text !== 'string' || !text.trim()) return;
-  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-    window.speechSynthesis.cancel();
-  }
-  const utterance = new window.SpeechSynthesisUtterance(text);
-  utterance.onerror = (event) => {
-    console.error('Speech synthesis error:', event.error);
-  };
-  window.speechSynthesis.speak(utterance);
-}
-
-// --- Send Message with async Hugging Face Bot Reply ---
-async function sendMessage() {
-  const input = document.getElementById("userInput");
-  const chatlog = document.getElementById("chatlog");
-  const userText = input.value.trim();
-
-  if (!userText) return;
-  chatlog.innerHTML += `<div><strong>You:</strong> ${userText}</div>`;
-  input.value = "";
-  chatlog.scrollTop = chatlog.scrollHeight;
-
-  // Show "thinking..." or loading indicator
-  chatlog.innerHTML += `<div id="botThinking"><strong>Bot:</strong> ...</div>`;
-  chatlog.scrollTop = chatlog.scrollHeight;
-
-  // Get bot reply from Hugging Face
-  const botReply = await getBotReply(userText);
-
-  // Replace loading indicator with actual reply
-  const botThinkingDiv = document.getElementById("botThinking");
-  if (botThinkingDiv) {
-    botThinkingDiv.outerHTML = `<div><strong>Bot:</strong> ${botReply}</div>`;
-  } else {
-    chatlog.innerHTML += `<div><strong>Bot:</strong> ${botReply}</div>`;
-  }
-  chatlog.scrollTop = chatlog.scrollHeight;
-
-  speakText(botReply);
-}
-
-// --- Hugging Face Inference API Call ---
-async function getBotReply(message) {
-  const apiUrl = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-small";
-  const hfApiKey = "YOUR_HUGGINGFACE_API_KEY"; // <-- Replace with your key
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${hfApiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ inputs: message })
+    sendButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
     });
-    const data = await response.json();
 
-    if (data.generated_text) {
-      return data.generated_text;
-    } else if (Array.isArray(data) && data.length && data[0].generated_text) {
-      return data[0].generated_text;
-    } else if (data.error) {
-      return "Sorry, the AI service is busy. Please try again in a moment.";
-    } else {
-      return "Sorry, I couldn't get a response from the AI.";
+    function sendMessage() {
+        const messageText = userInput.value.trim();
+        if (messageText === '') {
+            return;
+        }
+
+        addMessageToChatBox(messageText, 'user');
+        userInput.value = ''; // Clear input field
+
+        // Get bot response
+        const botResponse = getBotResponse(messageText);
+        // Simulate a small delay for bot response
+        setTimeout(() => {
+            addMessageToChatBox(botResponse, 'bot');
+        }, 500);
     }
-  } catch (err) {
-    return "Error reaching the AI service.";
-  }
-}
 
-// --- Enter Key Listener ---
-document.getElementById("userInput").addEventListener("keypress", function(event) {
-  if (event.key === "Enter") {
-    event.preventDefault(); // prevent form submission (if any)
-    sendMessage();
-  }
+    function addMessageToChatBox(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', sender + '-message');
+        messageDiv.textContent = text;
+        chatBox.appendChild(messageDiv);
+        // Scroll to the bottom of the chat box
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function getBotResponse(userText) {
+        const lowerUserText = userText.toLowerCase();
+
+        if (lowerUserText.includes('hello') || lowerUserText.includes('hi')) {
+            return 'Hi there!';
+        } else if (lowerUserText.includes('how are you')) {
+            return "I'm doing well, thanks for asking!";
+        } else if (lowerUserText.includes('what is your name')) {
+            return "I'm a simple chatbot.";
+        } else if (lowerUserText.includes('bye')) {
+            return "Goodbye! Have a nice day!";
+        } else {
+            // Simple echo for anything not recognized, to make it slightly more interactive than a fixed "I don't understand"
+            // For a more traditional "I don't understand", use:
+            // return "Sorry, I didn't understand that. I can only respond to a few phrases like 'hello', 'how are you', 'what is your name', or 'bye'.";
+            return "You said: '" + userText + "'. I am a simple bot with limited responses.";
+        }
+    }
+
+    // Optional: Add a welcome message from the bot when the chat loads
+    setTimeout(() => {
+        addMessageToChatBox("Hello! I'm a simple chatbot. Try saying 'hello' or 'how are you'.", 'bot');
+    }, 200);
 });
