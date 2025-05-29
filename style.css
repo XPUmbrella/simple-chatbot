@@ -11,8 +11,8 @@ body {
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-  width: 95vw;
-  max-width: 400px;
+  width: 97vw;
+  max-width: 480px;
   min-width: 0;
   padding: 16px;
   box-sizing: border-box;
@@ -20,9 +20,9 @@ body {
   flex-direction: column;
 }
 .chat-box {
-  height: 55vh;
+  height: 57vh;
   min-height: 220px;
-  max-height: 60vh;
+  max-height: 63vh;
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 6px;
@@ -64,11 +64,25 @@ button {
   color: #fff;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   transition: background 0.2s;
 }
-button:hover, button:focus {
+button:active, button:focus {
   background: #005fa3;
+}
+#mic-btn {
+  background: #eee;
+  color: #444;
+  font-size: 1.25rem;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  margin-left: 3px;
+  transition: background 0.2s;
+}
+#mic-btn.listening {
+  background: #ffeb3b;
+  color: #e65100;
 }
 @media (max-width: 600px) {
   .chat-container {
@@ -80,13 +94,13 @@ button:hover, button:focus {
     box-shadow: none;
   }
   .chat-box {
-    height: 50vh;
-    max-height: 55vh;
-    font-size: 0.98rem;
+    height: 51vh;
+    max-height: 58vh;
+    font-size: 0.99rem;
     padding: 8px;
   }
   button, #user-input {
-    font-size: 0.97rem;
+    font-size: 0.99rem;
     padding: 8px 8px;
   }
 }
