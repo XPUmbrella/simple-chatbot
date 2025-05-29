@@ -1,38 +1,79 @@
-/* Royal blue with 60% opacity for the chatbot window */
-#chatlog {
-  background: blue;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 16px rgba(65, 105, 225, 0.15);
-  color: #fff; /* White text for contrast */
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  display: flex;
-  justify-content: center;
-  margin-top: 50px;
-  background: #f0f0f0;
+.chat-container {
+    width: 90%;
+    max-width: 500px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    height: 70vh; /* Or adjust as preferred */
 }
-.chatbox {
-  background:  rgba(65, 105, 225, /*0.9/*);
-  border-radius: 8px;
-  padding: 20px;
-  width: 300px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+.chat-box {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
 }
-#chatlog {
-  height: 200px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
-  margin-bottom: 10px;
-  padding: 10px;
+
+.message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 15px;
+    line-height: 1.5;
+    max-width: 75%;
+    word-wrap: break-word;
 }
-input {
-  width: 70%;
-  padding: 5px;
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end; /* Messages from user on the right */
 }
-button {
-  width: 25%;
-  padding: 5px;
+
+.bot-message {
+    background-color: #e9ecef;
+    color: #333;
+    align-self: flex-start; /* Messages from bot on the left */
+}
+
+.input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px; /* Rounded input field */
+    margin-right: 10px;
+}
+
+#send-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px; /* Rounded button */
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#send-button:hover {
+    background-color: #0056b3;
 }
