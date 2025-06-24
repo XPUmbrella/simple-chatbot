@@ -2,7 +2,78 @@
 <html>
 <head>
     <title>Enhanced Chatbot</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-box {
+            height: 400px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .user {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+        .bot {
+            background-color: #f5f5f5;
+            text-align: left;
+        }
+        input {
+            width: 70%;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .command-controls, .tts-controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .tts-controls button {
+            background-color: #2196F3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -10,6 +81,13 @@
         <div class="chat-box" id="chatBox"></div>
         <input type="text" id="userInput" placeholder="Type your message...">
         <button id="sendButton">Send</button>
+        
+        <div class="tts-controls">
+            <button id="readBtn">Read</button>
+            <button id="pauseBtn">Pause</button>
+            <button id="resumeBtn">Resume</button>
+            <button id="stopBtn">Stop</button>
+        </div>
         
         <div class="command-controls">
             <button id="addSpeech">Add Speech Command</button>
@@ -20,12 +98,214 @@
         <div id="commandModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <div id="modalBody">
-                    <!-- Dynamic content will go here -->
-                </div>
+                <div id="modalBody"></div>
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        // Main application
+        const commands = [];
+        let currentUtterance = null;
+        let isPaused = false;
+        const speechSynthesis = window.speechSynthesis;
+        
+        // DOM elements
+        const modal = document.getElementById("commandModal");
+        const modalBody = document.getElementById("modalBody");
+        const closeBtn = document.querySelector(".close");
+        
+        // Initialize event listeners
+        document.getElementById("sendButton").addEventListener("click", sendMessage);
+        document.getElementById("userInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+        
+        document.getElementById("addSpeech").addEventListener("click", () => openModal("speech"));
+        document.getElementById("addFunction").addEventListener("click", () => openModal("function"));
+        document.getElementById("showCommands").addEventListener("click", showCommands);
+        
+        document.getElementById("readBtn").addEventListener("click", readAllMessages);
+        document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
+        document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
+        document.getElementById("stopBtn").addEventListener("click", stopSpeech);
+        
+        closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (event) => {
+            if (event.target === modal) modal.style.display = "none";
+        };
+        
+        // Chat functions
+        function sendMessage() {
+            const userInput = document.getElementById("userInput");
+            const message = userInput.value.trim();
+            
+            if (message) {
+                addMessage("user", message);
+                userInput.value = "";
+                
+                const matchedCommand = commands.find(cmd => 
+                    cmd.triggers.some(trigger => 
+                        message.toLowerCase().includes(trigger.toLowerCase())
+                    );
+                
+                if (matchedCommand) {
+                    if (matchedCommand.type === "speech") {
+                        addMessage("bot", matchedCommand.response);
+                    } else if (matchedCommand.type === "function") {
+                        try {
+                            matchedCommand.action();
+                        } catch (e) {
+                            addMessage("bot", `Error: ${e.message}`);
+                        }
+                    }
+                } else {
+                    addMessage("bot", "I don't understand that command.");
+                }
+            }
+        }
+        
+        function addMessage(sender, message) {
+            const chatBox = document.getElementById("chatBox");
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", sender);
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Command management
+        function openModal(type) {
+            modalBody.innerHTML = "";
+            
+            if (type === "speech") {
+                modalBody.innerHTML = `
+                    <h2>Add Speech Command</h2>
+                    <div>
+                        <label>Trigger Phrases (comma separated):</label>
+                        <input type="text" id="triggers" placeholder="hello,hi,hey">
+                    </div>
+                    <div>
+                        <label>Response Text:</label>
+                        <textarea id="response" rows="3" style="width:100%"></textarea>
+                    </div>
+                    <button onclick="addCommand('speech')">Add Command</button>
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <h2>Add Function Command</h2>
+                    <div>
+                        <label>Trigger Phrases (comma separated):</label>
+                        <input type="text" id="funcTriggers" placeholder="time,clock">
+                    </div>
+                    <div>
+                        <label>Function Code:</label>
+                        <textarea id="funcCode" rows="5" style="width:100%">function execute() {
+    const now = new Date();
+    addMessage('bot', 'Current time: ' + now.toLocaleTimeString());
+}</textarea>
+                    </div>
+                    <button onclick="addCommand('function')">Add Command</button>
+                `;
+            }
+            
+            modal.style.display = "block";
+        }
+        
+        function addCommand(type) {
+            if (type === "speech") {
+                const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
+                const response = document.getElementById("response").value;
+                
+                commands.push({
+                    type: "speech",
+                    triggers: triggers,
+                    response: response
+                });
+            } else {
+                const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
+                const funcCode = document.getElementById("funcCode").value;
+                
+                try {
+                    const func = new Function(funcCode + "\nreturn execute;")();
+                    commands.push({
+                        type: "function",
+                        triggers: triggers,
+                        action: func
+                    });
+                } catch (e) {
+                    alert("Function error: " + e.message);
+                    return;
+                }
+            }
+            
+            modal.style.display = "none";
+            alert("Command added!");
+        }
+        
+        function showCommands() {
+            modalBody.innerHTML = `
+                <h2>Current Commands</h2>
+                <div style="max-height:400px;overflow-y:auto">
+                    ${commands.map((cmd, i) => `
+                        <div style="margin:10px 0;padding:10px;border:1px solid #ddd">
+                            <h3>${cmd.type.toUpperCase()} Command</h3>
+                            <p><strong>Triggers:</strong> ${cmd.triggers.join(', ')}</p>
+                            ${cmd.type === 'speech' ? `<p><strong>Response:</strong> ${cmd.response.length > 100 ? cmd.response.substring(0,100)+'...' : cmd.response}</p>` : ''}
+                            <button onclick="deleteCommand(${i})">Delete</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            modal.style.display = "block";
+        }
+        
+        function deleteCommand(index) {
+            commands.splice(index, 1);
+            showCommands();
+        }
+        
+        // TTS functions
+        function readAllMessages() {
+            stopSpeech();
+            const messages = Array.from(document.querySelectorAll('.message')).map(msg => {
+                return `${msg.classList.contains('user') ? 'You said: ' : 'Bot said: '}${msg.textContent}`;
+            }).join('\n\n');
+            
+            currentUtterance = new SpeechSynthesisUtterance(messages);
+            currentUtterance.onend = () => currentUtterance = null;
+            speechSynthesis.speak(currentUtterance);
+            updateTtsControls();
+        }
+        
+        function pauseSpeech() {
+            speechSynthesis.pause();
+            isPaused = true;
+            updateTtsControls();
+        }
+        
+        function resumeSpeech() {
+            speechSynthesis.resume();
+            isPaused = false;
+            updateTtsControls();
+        }
+        
+        function stopSpeech() {
+            speechSynthesis.cancel();
+            currentUtterance = null;
+            isPaused = false;
+            updateTtsControls();
+        }
+        
+        function updateTtsControls() {
+            document.getElementById('pauseBtn').disabled = !currentUtterance || isPaused;
+            document.getElementById('resumeBtn').disabled = !currentUtterance || !isPaused;
+            document.getElementById('stopBtn').disabled = !currentUtterance;
+        }
+        
+        // Make functions available globally for button onclick handlers
+        window.addCommand = addCommand;
+        window.deleteCommand = deleteCommand;
+    </script>
 </body>
 </html>
