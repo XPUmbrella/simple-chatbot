@@ -1,143 +1,434 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Enhanced Chatbot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Simple Chatbot</title>
     <style>
-        /* [Previous CSS remains exactly the same] */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #4a89dc;
+            color: white;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .chat-box {
+            height: 400px;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+            text-align: left;
+        }
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
+        }
+        #userInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+        }
+        #sendButton {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background-color: #4a89dc;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #sendButton:hover {
+            background-color: #3b7dd8;
+        }
+        .control-panel {
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .control-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #addSpeechBtn {
+            background-color: #5cb85c;
+            color: white;
+        }
+        #addFunctionBtn {
+            background-color: #5bc0de;
+            color: white;
+        }
+        #showCommandsBtn {
+            background-color: #f0ad4e;
+            color: white;
+        }
+        .tts-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .tts-controls button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #readBtn {
+            background-color: #5cb85c;
+            color: white;
+        }
+        #pauseBtn {
+            background-color: #f0ad4e;
+            color: white;
+        }
+        #resumeBtn {
+            background-color: #5bc0de;
+            color: white;
+        }
+        #stopBtn {
+            background-color: #d9534f;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .command-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .command-form input, .command-form textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .command-form textarea {
+            min-height: 150px;
+            font-family: monospace;
+        }
+        .command-form button {
+            padding: 12px;
+            background-color: #4a89dc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .command-list {
+            margin-top: 20px;
+        }
+        .command-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #4a89dc;
+        }
+        .command-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .command-item button {
+            padding: 5px 10px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
-    <!-- [Previous HTML structure remains exactly the same] -->
+    <div class="chat-container">
+        <div class="chat-header">
+            Enhanced Chatbot
+        </div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="control-buttons">
+            <button id="addSpeechBtn">Add Speech Command</button>
+            <button id="addFunctionBtn">Add Function Command</button>
+            <button id="showCommandsBtn">View Commands</button>
+        </div>
+        <div class="tts-controls">
+            <button id="readBtn">🔊 Read Last</button>
+            <button id="pauseBtn" disabled>⏸ Pause</button>
+            <button id="resumeBtn" disabled>▶ Resume</button>
+            <button id="stopBtn" disabled>⏹ Stop</button>
+        </div>
+    </div>
+
+    <div id="commandModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
 
     <script>
-        // Chatbot application - IMPROVED VERSION
-        const commands = [];
-        let currentUtterance = null;
-        let isPaused = false;
-        const speechSynthesis = window.speechSynthesis;
-        const CHUNK_SIZE = 30000;
-        
-        // Initialize UI - FIXED SYNTAX ERROR
-        document.addEventListener('DOMContentLoaded', function() {
-            // [Previous event listeners remain the same]
-        });
-        
-        function addDefaultCommands() {
-            commands.push({
+        // Chatbot Application
+        const commands = [
+            {
                 type: "speech",
                 triggers: ["hello", "hi", "hey"],
                 response: "Hello there! How can I help you today?"
-            });
-            
-            commands.push({
+            },
+            {
                 type: "function",
                 triggers: ["time", "what time is it"],
                 action: function() {
                     const now = new Date();
                     addMessage("bot", `The current time is ${now.toLocaleTimeString()}`);
-                }
+                },
+                name: "Time Command"
+            }
+        ];
+
+        // DOM Elements
+        const chatBox = document.getElementById("chatBox");
+        const userInput = document.getElementById("userInput");
+        const sendButton = document.getElementById("sendButton");
+        const modal = document.getElementById("commandModal");
+        const modalBody = document.getElementById("modalBody");
+        const closeBtn = document.querySelector(".close");
+
+        // TTS Elements
+        const synth = window.speechSynthesis;
+        let currentUtterance = null;
+        let isPaused = false;
+
+        // Initialize the chatbot
+        function init() {
+            // Event Listeners
+            sendButton.addEventListener("click", sendMessage);
+            userInput.addEventListener("keypress", function(e) {
+                if (e.key === "Enter") sendMessage();
             });
-        }
-        
-        // FIXED SYNTAX ERROR IN THIS FUNCTION
-        function findMatchingCommand(message) {
-            return commands.find(cmd => 
-                cmd.triggers.some(trigger => 
-                    message.toLowerCase().includes(trigger.toLowerCase())
-                ));
+
+            document.getElementById("addSpeechBtn").addEventListener("click", () => openModal("speech"));
+            document.getElementById("addFunctionBtn").addEventListener("click", () => openModal("function"));
+            document.getElementById("showCommandsBtn").addEventListener("click", showCommands);
+
+            document.getElementById("readBtn").addEventListener("click", readLastMessage);
+            document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
+            document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
+            document.getElementById("stopBtn").addEventListener("click", stopSpeech);
+
+            closeBtn.addEventListener("click", () => modal.style.display = "none");
+            window.addEventListener("click", (event) => {
+                if (event.target === modal) modal.style.display = "none";
+            });
+
+            // Add welcome message
+            setTimeout(() => {
+                addMessage("bot", "Hello! I'm your enhanced chatbot. Try saying 'hello' or ask 'what time is it?'");
+            }, 500);
         }
 
-        // ENHANCED FUNCTION COMMAND EDITOR
+        // Message Functions
+        function addMessage(sender, message) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", `${sender}-message`);
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                addMessage("user", message);
+                userInput.value = "";
+                processCommand(message);
+            }
+        }
+
+        function processCommand(input) {
+            const cmd = commands.find(c => 
+                c.triggers.some(t => input.toLowerCase().includes(t.toLowerCase()))
+            );
+
+            if (cmd) {
+                if (cmd.type === "speech") {
+                    addMessage("bot", cmd.response);
+                } else if (cmd.type === "function") {
+                    try {
+                        cmd.action();
+                    } catch (e) {
+                        addMessage("bot", `Error: ${e.message}`);
+                        console.error("Command error:", e);
+                    }
+                }
+                return true;
+            }
+            
+            addMessage("bot", "I didn't understand that. Try 'hello' or 'what time is it?'");
+            return false;
+        }
+
+        // Command Management
         function openModal(type) {
             modalBody.innerHTML = "";
             
             if (type === "speech") {
                 modalBody.innerHTML = `
                     <h2>Add Speech Command</h2>
-                    <div>
-                        <label>Trigger Phrases (comma separated):</label>
+                    <div class="command-form">
+                        <label for="triggers">Trigger Phrases (comma separated):</label>
                         <input type="text" id="triggers" placeholder="hello,hi,hey">
+                        
+                        <label for="response">Response Text:</label>
+                        <textarea id="response" placeholder="Enter the response text here..."></textarea>
+                        
+                        <button onclick="addCommand('speech')">Add Command</button>
                     </div>
-                    <div>
-                        <label>Response Text:</label>
-                        <textarea id="response" placeholder="Enter response text here..."></textarea>
-                    </div>
-                    <button onclick="addNewCommand('speech')">Add Command</button>
                 `;
             } else {
                 modalBody.innerHTML = `
                     <h2>Add Function Command</h2>
-                    <div>
-                        <label>Trigger Phrases (comma separated):</label>
+                    <div class="command-form">
+                        <label for="funcTriggers">Trigger Phrases (comma separated):</label>
                         <input type="text" id="funcTriggers" placeholder="time,what time is it">
-                    </div>
-                    <div>
-                        <label>Function Name:</label>
-                        <input type="text" id="funcName" placeholder="showTime">
-                    </div>
-                    <div>
-                        <label>Function Code:</label>
-                        <textarea id="funcCode" placeholder="// Available variables:
-// addMessage(sender, message)
-// chatBox (DOM element)
                         
-function execute() {
-    // Your code here
+                        <label for="funcName">Command Name (optional):</label>
+                        <input type="text" id="funcName" placeholder="Time Command">
+                        
+                        <label for="funcCode">Function Code:</label>
+                        <textarea id="funcCode">function execute() {
+    // Available variables:
+    // addMessage(sender, message)
+    // chatBox (DOM element)
+    
+    // Example:
     const now = new Date();
     addMessage('bot', 'Current time: ' + now.toLocaleTimeString());
-}"></textarea>
+}</textarea>
+                        
+                        <button onclick="addCommand('function')">Add Command</button>
                     </div>
-                    <button onclick="addNewCommand('function')">Add Command</button>
                 `;
             }
             
             modal.style.display = "block";
         }
 
-        // IMPROVED FUNCTION COMMAND HANDLING
-        function addNewCommand(type) {
+        function addCommand(type) {
             try {
                 if (type === "speech") {
                     const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
                     const response = document.getElementById("response").value;
                     
                     if (!triggers.length || !response) {
-                        alert("Please fill in all fields");
+                        alert("Please fill in all required fields");
                         return;
                     }
                     
                     commands.push({
                         type: "speech",
                         triggers: triggers,
-                        response: response,
-                        category: "general" // Added simple categorization
+                        response: response
                     });
                 } else {
                     const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
                     const funcName = document.getElementById("funcName").value.trim();
                     const funcCode = document.getElementById("funcCode").value;
                     
-                    if (!triggers.length || !funcName || !funcCode) {
-                        alert("Please fill in all fields");
+                    if (!triggers.length || !funcCode) {
+                        alert("Please fill in all required fields");
                         return;
                     }
                     
-                    // Safer function creation
-                    const funcWrapper = new Function(`
-                        ${funcCode}
-                        return { execute: execute };
-                    `)();
-                    
-                    if (!funcWrapper.execute) {
-                        throw new Error("Function must contain an execute() method");
-                    }
+                    // Create the function safely
+                    const func = new Function(`${funcCode}\nreturn execute;`)();
                     
                     commands.push({
                         type: "function",
                         triggers: triggers,
-                        action: funcWrapper.execute,
-                        category: "general",
-                        name: funcName
+                        action: func,
+                        name: funcName || "Unnamed Function"
                     });
                 }
                 
@@ -145,26 +436,21 @@ function execute() {
                 alert("Command added successfully!");
             } catch (e) {
                 alert(`Error: ${e.message}`);
-                console.error(e);
+                console.error("Command creation error:", e);
             }
         }
 
-        // ENHANCED COMMAND DISPLAY
         function showCommands() {
             modalBody.innerHTML = `
-                <h2>Current Commands (${commands.length})</h2>
-                <input type="text" id="commandFilter" placeholder="Filter commands..." style="width:100%;margin-bottom:10px;">
-                <div id="commandList">
+                <h2>Command List (${commands.length})</h2>
+                <input type="text" id="commandFilter" placeholder="Filter commands..." style="width:100%;padding:8px;margin-bottom:15px;">
+                <div class="command-list" id="commandList">
                     ${commands.map((cmd, i) => `
                         <div class="command-item">
                             <h3>${cmd.name || cmd.type.toUpperCase()} Command</h3>
-                            <p><strong>Type:</strong> ${cmd.type} | <strong>Category:</strong> ${cmd.category || 'none'}</p>
+                            <p><strong>Type:</strong> ${cmd.type}</p>
                             <p><strong>Triggers:</strong> ${cmd.triggers.join(', ')}</p>
-                            ${cmd.type === 'speech' ? 
-                                `<p><strong>Response:</strong> ${cmd.response.length > 100 ? 
-                                    cmd.response.substring(0, 100) + '...' : 
-                                    cmd.response}</p>` : 
-                                ''}
+                            ${cmd.type === 'speech' ? `<p><strong>Response:</strong> ${cmd.response.length > 50 ? cmd.response.substring(0, 50) + '...' : cmd.response}</p>` : ''}
                             <button onclick="deleteCommand(${i})">Delete</button>
                         </div>
                     `).join('')}
@@ -174,22 +460,76 @@ function execute() {
             // Add filtering functionality
             document.getElementById("commandFilter").addEventListener("input", function() {
                 const filter = this.value.toLowerCase();
-                const items = document.querySelectorAll(".command-item");
-                
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(filter) ? "block" : "none";
+                document.querySelectorAll(".command-item").forEach(item => {
+                    item.style.display = item.textContent.toLowerCase().includes(filter) ? "block" : "none";
                 });
             });
             
             modal.style.display = "block";
         }
 
-        // [Rest of your existing functions remain the same]
-        
+        function deleteCommand(index) {
+            if (confirm("Are you sure you want to delete this command?")) {
+                commands.splice(index, 1);
+                showCommands();
+            }
+        }
+
+        // TTS Functions
+        function readLastMessage() {
+            stopSpeech();
+            
+            const messages = document.querySelectorAll(".bot-message");
+            if (messages.length > 0) {
+                const text = messages[messages.length - 1].textContent;
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                
+                currentUtterance.onend = function() {
+                    currentUtterance = null;
+                    updateTtsControls();
+                };
+                
+                synth.speak(currentUtterance);
+                updateTtsControls();
+            }
+        }
+
+        function pauseSpeech() {
+            if (synth.speaking) {
+                synth.pause();
+                isPaused = true;
+                updateTtsControls();
+            }
+        }
+
+        function resumeSpeech() {
+            if (isPaused) {
+                synth.resume();
+                isPaused = false;
+                updateTtsControls();
+            }
+        }
+
+        function stopSpeech() {
+            synth.cancel();
+            currentUtterance = null;
+            isPaused = false;
+            updateTtsControls();
+        }
+
+        function updateTtsControls() {
+            const isSpeaking = synth.speaking;
+            document.getElementById("pauseBtn").disabled = !isSpeaking || isPaused;
+            document.getElementById("resumeBtn").disabled = !isPaused;
+            document.getElementById("stopBtn").disabled = !isSpeaking;
+        }
+
         // Make functions available globally
-        window.addNewCommand = addNewCommand;
+        window.addCommand = addCommand;
         window.deleteCommand = deleteCommand;
+
+        // Initialize the chatbot
+        document.addEventListener("DOMContentLoaded", init);
     </script>
 </body>
 </html>
