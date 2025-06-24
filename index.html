@@ -20,6 +20,7 @@
             margin: 5px 0;
             padding: 8px;
             border-radius: 5px;
+            word-wrap: break-word;
         }
         .user {
             background-color: #e3f2fd;
@@ -29,24 +30,26 @@
             background-color: #f5f5f5;
             text-align: left;
         }
-        input {
+        input[type="text"] {
             width: 70%;
             padding: 8px;
+            margin-bottom: 10px;
         }
         button {
             padding: 8px 15px;
-            background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
+            margin-right: 5px;
         }
-        .command-controls, .tts-controls {
-            margin: 10px 0;
-            display: flex;
-            gap: 10px;
+        #sendButton {
+            background-color: #4CAF50;
         }
         .tts-controls button {
             background-color: #2196F3;
+        }
+        .command-controls button {
+            background-color: #FF9800;
         }
         .modal {
             display: none;
@@ -65,6 +68,8 @@
             border: 1px solid #888;
             width: 80%;
             max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         .close {
             color: #aaa;
@@ -72,6 +77,21 @@
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
+        }
+        .command-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        button:disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -83,10 +103,10 @@
         <button id="sendButton">Send</button>
         
         <div class="tts-controls">
-            <button id="readBtn">Read</button>
-            <button id="pauseBtn">Pause</button>
-            <button id="resumeBtn">Resume</button>
-            <button id="stopBtn">Stop</button>
+            <button id="readBtn">Read All</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="resumeBtn" disabled>Resume</button>
+            <button id="stopBtn" disabled>Stop</button>
         </div>
         
         <div class="command-controls">
@@ -104,38 +124,59 @@
     </div>
 
     <script>
-        // Main application
+        // Chatbot application
         const commands = [];
         let currentUtterance = null;
         let isPaused = false;
         const speechSynthesis = window.speechSynthesis;
+        const CHUNK_SIZE = 30000; // Split large texts into 30k character chunks
         
-        // DOM elements
-        const modal = document.getElementById("commandModal");
-        const modalBody = document.getElementById("modalBody");
-        const closeBtn = document.querySelector(".close");
-        
-        // Initialize event listeners
-        document.getElementById("sendButton").addEventListener("click", sendMessage);
-        document.getElementById("userInput").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
+        // Initialize UI
+        document.addEventListener('DOMContentLoaded', function() {
+            // Message handling
+            document.getElementById("sendButton").addEventListener("click", sendMessage);
+            document.getElementById("userInput").addEventListener("keypress", function(e) {
+                if (e.key === "Enter") sendMessage();
+            });
+            
+            // Command controls
+            document.getElementById("addSpeech").addEventListener("click", () => openModal('speech'));
+            document.getElementById("addFunction").addEventListener("click", () => openModal('function'));
+            document.getElementById("showCommands").addEventListener("click", showCommands);
+            
+            // TTS controls
+            document.getElementById("readBtn").addEventListener("click", readAllMessages);
+            document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
+            document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
+            document.getElementById("stopBtn").addEventListener("click", stopSpeech);
+            
+            // Modal controls
+            document.querySelector(".close").addEventListener("click", () => modal.style.display = "none");
+            window.addEventListener("click", (event) => {
+                if (event.target === modal) modal.style.display = "none";
+            });
+            
+            // Add some default commands
+            addDefaultCommands();
         });
         
-        document.getElementById("addSpeech").addEventListener("click", () => openModal("speech"));
-        document.getElementById("addFunction").addEventListener("click", () => openModal("function"));
-        document.getElementById("showCommands").addEventListener("click", showCommands);
+        function addDefaultCommands() {
+            commands.push({
+                type: "speech",
+                triggers: ["hello", "hi", "hey"],
+                response: "Hello there! How can I help you today?"
+            });
+            
+            commands.push({
+                type: "function",
+                triggers: ["time", "what time is it"],
+                action: function() {
+                    const now = new Date();
+                    addMessage("bot", `The current time is ${now.toLocaleTimeString()}`);
+                }
+            });
+        }
         
-        document.getElementById("readBtn").addEventListener("click", readAllMessages);
-        document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
-        document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
-        document.getElementById("stopBtn").addEventListener("click", stopSpeech);
-        
-        closeBtn.onclick = () => modal.style.display = "none";
-        window.onclick = (event) => {
-            if (event.target === modal) modal.style.display = "none";
-        };
-        
-        // Chat functions
         function sendMessage() {
             const userInput = document.getElementById("userInput");
             const message = userInput.value.trim();
@@ -144,24 +185,48 @@
                 addMessage("user", message);
                 userInput.value = "";
                 
-                const matchedCommand = commands.find(cmd => 
-                    cmd.triggers.some(trigger => 
-                        message.toLowerCase().includes(trigger.toLowerCase())
-                    );
+                // Find matching command
+                const matchedCommand = findMatchingCommand(message);
                 
                 if (matchedCommand) {
-                    if (matchedCommand.type === "speech") {
-                        addMessage("bot", matchedCommand.response);
-                    } else if (matchedCommand.type === "function") {
-                        try {
-                            matchedCommand.action();
-                        } catch (e) {
-                            addMessage("bot", `Error: ${e.message}`);
-                        }
-                    }
+                    executeCommand(matchedCommand);
                 } else {
-                    addMessage("bot", "I don't understand that command.");
+                    addMessage("bot", "I don't understand that command. Try 'hello' or 'what time is it?'");
                 }
+            }
+        }
+        
+        function findMatchingCommand(message) {
+            return commands.find(cmd => 
+                cmd.triggers.some(trigger => 
+                    message.toLowerCase().includes(trigger.toLowerCase())
+                );
+        }
+        
+        function executeCommand(command) {
+            if (command.type === "speech") {
+                handleLargeResponse(command.response);
+            } else if (command.type === "function") {
+                try {
+                    command.action();
+                } catch (e) {
+                    addMessage("bot", `Error executing command: ${e.message}`);
+                }
+            }
+        }
+        
+        function handleLargeResponse(response) {
+            if (response.length > 100000) { // For very large responses
+                addMessage("bot", "Preparing large response...");
+                setTimeout(() => {
+                    // Split into manageable chunks for display
+                    const chunks = chunkText(response, 100000);
+                    chunks.forEach((chunk, i) => {
+                        addMessage("bot", i === 0 ? chunk : `(continued) ${chunk}`);
+                    });
+                }, 100);
+            } else {
+                addMessage("bot", response);
             }
         }
         
@@ -169,6 +234,13 @@
             const chatBox = document.getElementById("chatBox");
             const messageElement = document.createElement("div");
             messageElement.classList.add("message", sender);
+            
+            // Handle extremely large messages
+            if (message.length > 50000) {
+                messageElement.style.maxHeight = "300px";
+                messageElement.style.overflowY = "auto";
+            }
+            
             messageElement.textContent = message;
             chatBox.appendChild(messageElement);
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -187,71 +259,88 @@
                     </div>
                     <div>
                         <label>Response Text:</label>
-                        <textarea id="response" rows="3" style="width:100%"></textarea>
+                        <textarea id="response" placeholder="Enter response text here..."></textarea>
                     </div>
-                    <button onclick="addCommand('speech')">Add Command</button>
+                    <button onclick="addNewCommand('speech')">Add Command</button>
                 `;
             } else {
                 modalBody.innerHTML = `
                     <h2>Add Function Command</h2>
                     <div>
                         <label>Trigger Phrases (comma separated):</label>
-                        <input type="text" id="funcTriggers" placeholder="time,clock">
+                        <input type="text" id="funcTriggers" placeholder="time,what time is it">
                     </div>
                     <div>
                         <label>Function Code:</label>
-                        <textarea id="funcCode" rows="5" style="width:100%">function execute() {
+                        <textarea id="funcCode">function execute() {
+    // Your code here
+    // Use addMessage('bot', 'your message') to send responses
     const now = new Date();
     addMessage('bot', 'Current time: ' + now.toLocaleTimeString());
 }</textarea>
                     </div>
-                    <button onclick="addCommand('function')">Add Command</button>
+                    <button onclick="addNewCommand('function')">Add Command</button>
                 `;
             }
             
             modal.style.display = "block";
         }
         
-        function addCommand(type) {
-            if (type === "speech") {
-                const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
-                const response = document.getElementById("response").value;
-                
-                commands.push({
-                    type: "speech",
-                    triggers: triggers,
-                    response: response
-                });
-            } else {
-                const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
-                const funcCode = document.getElementById("funcCode").value;
-                
-                try {
+        function addNewCommand(type) {
+            try {
+                if (type === "speech") {
+                    const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
+                    const response = document.getElementById("response").value;
+                    
+                    if (!triggers.length || !response) {
+                        alert("Please fill in all fields");
+                        return;
+                    }
+                    
+                    commands.push({
+                        type: "speech",
+                        triggers: triggers,
+                        response: response
+                    });
+                } else {
+                    const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
+                    const funcCode = document.getElementById("funcCode").value;
+                    
+                    if (!triggers.length || !funcCode) {
+                        alert("Please fill in all fields");
+                        return;
+                    }
+                    
+                    // Safely create the function
                     const func = new Function(funcCode + "\nreturn execute;")();
+                    
                     commands.push({
                         type: "function",
                         triggers: triggers,
                         action: func
                     });
-                } catch (e) {
-                    alert("Function error: " + e.message);
-                    return;
                 }
+                
+                modal.style.display = "none";
+                alert("Command added successfully!");
+            } catch (e) {
+                alert(`Error: ${e.message}`);
             }
-            
-            modal.style.display = "none";
-            alert("Command added!");
         }
         
         function showCommands() {
             modalBody.innerHTML = `
-                <h2>Current Commands</h2>
-                <div style="max-height:400px;overflow-y:auto">
+                <h2>Current Commands (${commands.length})</h2>
+                <div>
                     ${commands.map((cmd, i) => `
-                        <div style="margin:10px 0;padding:10px;border:1px solid #ddd">
+                        <div class="command-item">
                             <h3>${cmd.type.toUpperCase()} Command</h3>
                             <p><strong>Triggers:</strong> ${cmd.triggers.join(', ')}</p>
-                            ${cmd.type === 'speech' ? `<p><strong>Response:</strong> ${cmd.response.length > 100 ? cmd.response.substring(0,100)+'...' : cmd.response}</p>` : ''}
+                            ${cmd.type === 'speech' ? 
+                                `<p><strong>Response:</strong> ${cmd.response.length > 100 ? 
+                                    cmd.response.substring(0, 100) + '...' : 
+                                    cmd.response}</p>` : 
+                                '<p><strong>Function command</strong></p>'}
                             <button onclick="deleteCommand(${i})">Delete</button>
                         </div>
                     `).join('')}
@@ -261,33 +350,80 @@
         }
         
         function deleteCommand(index) {
-            commands.splice(index, 1);
-            showCommands();
+            if (confirm("Delete this command?")) {
+                commands.splice(index, 1);
+                showCommands();
+            }
         }
         
-        // TTS functions
+        // TTS functionality
         function readAllMessages() {
             stopSpeech();
+            
             const messages = Array.from(document.querySelectorAll('.message')).map(msg => {
                 return `${msg.classList.contains('user') ? 'You said: ' : 'Bot said: '}${msg.textContent}`;
             }).join('\n\n');
             
-            currentUtterance = new SpeechSynthesisUtterance(messages);
-            currentUtterance.onend = () => currentUtterance = null;
-            speechSynthesis.speak(currentUtterance);
+            // Split into chunks if too large
+            if (messages.length > CHUNK_SIZE) {
+                const chunks = chunkText(messages, CHUNK_SIZE);
+                speakChunks(chunks);
+            } else {
+                speakText(messages);
+            }
+            
             updateTtsControls();
+        }
+        
+        function chunkText(text, size) {
+            const chunks = [];
+            for (let i = 0; i < text.length; i += size) {
+                chunks.push(text.substring(i, i + size));
+            }
+            return chunks;
+        }
+        
+        function speakChunks(chunks) {
+            if (chunks.length === 0) return;
+            
+            const chunk = chunks.shift();
+            currentUtterance = new SpeechSynthesisUtterance(chunk);
+            
+            currentUtterance.onend = function() {
+                if (chunks.length > 0) {
+                    speakChunks(chunks);
+                } else {
+                    currentUtterance = null;
+                    updateTtsControls();
+                }
+            };
+            
+            speechSynthesis.speak(currentUtterance);
+        }
+        
+        function speakText(text) {
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.onend = function() {
+                currentUtterance = null;
+                updateTtsControls();
+            };
+            speechSynthesis.speak(currentUtterance);
         }
         
         function pauseSpeech() {
-            speechSynthesis.pause();
-            isPaused = true;
-            updateTtsControls();
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                isPaused = true;
+                updateTtsControls();
+            }
         }
         
         function resumeSpeech() {
-            speechSynthesis.resume();
-            isPaused = false;
-            updateTtsControls();
+            if (isPaused) {
+                speechSynthesis.resume();
+                isPaused = false;
+                updateTtsControls();
+            }
         }
         
         function stopSpeech() {
@@ -298,13 +434,13 @@
         }
         
         function updateTtsControls() {
-            document.getElementById('pauseBtn').disabled = !currentUtterance || isPaused;
-            document.getElementById('resumeBtn').disabled = !currentUtterance || !isPaused;
-            document.getElementById('stopBtn').disabled = !currentUtterance;
+            document.getElementById('pauseBtn').disabled = !speechSynthesis.speaking || isPaused;
+            document.getElementById('resumeBtn').disabled = !isPaused;
+            document.getElementById('stopBtn').disabled = !speechSynthesis.speaking;
         }
         
-        // Make functions available globally for button onclick handlers
-        window.addCommand = addCommand;
+        // Make functions available globally for HTML onclick handlers
+        window.addNewCommand = addNewCommand;
         window.deleteCommand = deleteCommand;
     </script>
 </body>
