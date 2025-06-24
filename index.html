@@ -1,9 +1,145 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Controlled-Speech Chatbot</title>
+    <title>Smart Voice Command Chatbot</title>
     <style>
-        /* Previous styles remain the same */
+        :root {
+            --primary: #4285f4;
+            --danger: #ff4444;
+            --success: #34a853;
+            --warning: #ffbb33;
+            --info: #33b5e5;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        #chatbox {
+            height: 300px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin: 8px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .user-message {
+            background: #e3f2fd;
+            margin-left: auto;
+            border-radius: 18px 18px 0 18px;
+        }
+        .bot-message {
+            background: #f1f1f1;
+            border-radius: 18px 18px 18px 0;
+        }
+        .system-message {
+            background: #fff8e1;
+            margin: 8px auto;
+            max-width: 90%;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            border-left: 4px solid var(--warning);
+        }
+        .teaching-message {
+            background: #e8f5e9;
+            border-left: 4px solid var(--success);
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        #userInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            filter: brightness(1.1);
+        }
+        #micButton {
+            background: var(--danger);
+            width: 50px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #micButton.listening {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        #status {
+            height: 20px;
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        .voice-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .voice-btn {
+            background: var(--success);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .voice-btn:disabled {
+            background: #cccccc;
+        }
+        #commandsBtn {
+            background: var(--warning);
+            margin: 10px auto;
+            display: block;
+        }
         .settings-panel {
             background: white;
             padding: 15px;
@@ -45,15 +181,52 @@
             border-radius: 50%;
         }
         input:checked + .slider {
-            background-color: #34a853;
+            background-color: var(--success);
         }
         input:checked + .slider:before {
             transform: translateX(26px);
         }
+        .command-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .command-item:last-child {
+            border-bottom: none;
+        }
+        .command-trigger {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .command-action {
+            color: #666;
+        }
+        .delete-command {
+            color: var(--danger);
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #teachingPanel {
+            display: none;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
-    <!-- Previous HTML remains the same until voice-controls -->
+    <h1>Smart Voice Command Chatbot</h1>
+    <p class="subtitle">Try saying "create new command" or "help"</p>
+    
+    <div id="chatbox"></div>
+    
+    <div class="input-group">
+        <input type="text" id="userInput" placeholder="Type or say something..." autofocus>
+        <button onclick="sendMessage()">Send</button>
+        <button id="micButton" onclick="toggleSpeechRecognition()">🎤</button>
+    </div>
     
     <div class="voice-controls">
         <button class="voice-btn" id="speakBtn" onclick="speakLastResponse()">🔊</button>
@@ -62,45 +235,404 @@
             <input type="checkbox" id="speechToggle" checked>
             <span class="slider"></span>
         </label>
-        <span>Voice Responses</span>
+        <span>Voice</span>
     </div>
     
-    <!-- Add this new panel -->
+    <button id="commandsBtn" onclick="toggleCommandsPanel()">Show My Commands</button>
+    <div id="commandsPanel" class="settings-panel">
+        <h3>Your Custom Commands</h3>
+        <div id="commandsList"></div>
+    </div>
+    
     <div class="settings-panel">
         <h3>Speech Settings</h3>
         <p><label>
-            <input type="checkbox" id="onlySpeakForCommands" checked>
+            <input type="checkbox" id="onlySpeakForCommands">
             Only speak for direct commands
         </label></p>
         <p><label>
             <input type="checkbox" id="dontSpeakAutomatically">
-            Don't speak unless I click the 🔊 button
+            Don't speak unless I click 🔊
         </label></p>
     </div>
+    
+    <div id="teachingPanel">
+        <h3>Teach Me a New Command</h3>
+        <p>Current Step: <span id="teachingStep">1</span>/3</p>
+        <div id="teachingContent"></div>
+        <button id="cancelTeaching" onclick="cancelTeaching()">Cancel</button>
+    </div>
+    
+    <p id="status"></p>
 
     <script>
-        // Add these variables at the top
+        // ======================
+        // CORE SETUP
+        // ======================
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        const synth = window.speechSynthesis;
+        let currentUtterance = null;
+        let isListening = false;
+        let lastBotResponse = "";
+        let isTeaching = false;
+        let newCommand = {
+            triggers: [],
+            action: "",
+            description: ""
+        };
+        let teachingStep = 1;
         let lastSpeechTime = 0;
         const speechDelay = 3000; // 3 seconds between speeches
-        
-        // Modify the speak function
+
+        // DOM elements
+        const micButton = document.getElementById('micButton');
+        const statusElement = document.getElementById('status');
+        const speakBtn = document.getElementById('speakBtn');
+        const stopSpeakBtn = document.getElementById('stopSpeakBtn');
+        const commandsPanel = document.getElementById('commandsPanel');
+        const commandsList = document.getElementById('commandsList');
+        const teachingPanel = document.getElementById('teachingPanel');
+        const teachingContent = document.getElementById('teachingContent');
+        const teachingStepDisplay = document.getElementById('teachingStep');
+
+        // Load commands from localStorage
+        let customCommands = JSON.parse(localStorage.getItem('customCommands')) || [
+            {
+                triggers: ["help", "what can I say", "commands"],
+                action: "showAvailableCommands()",
+                description: "Show available voice commands"
+            },
+            {
+                triggers: ["clear chat", "clean screen", "start over"],
+                action: "clearChat()",
+                description: "Clear the conversation"
+            },
+            {
+                triggers: ["stop speaking", "be quiet", "shut up"],
+                action: "stopSpeaking()",
+                description: "Stop the bot from speaking"
+            },
+            {
+                triggers: ["repeat", "say that again", "once more"],
+                action: "speakLastResponse()",
+                description: "Repeat the last response"
+            },
+            {
+                triggers: ["create new command", "teach me", "add command"],
+                action: "startTeaching()",
+                description: "Create a new voice command"
+            }
+        ];
+
+        // ======================
+        // COMMAND TEACHING SYSTEM
+        // ======================
+        function startTeaching() {
+            isTeaching = true;
+            teachingStep = 1;
+            newCommand = { triggers: [], action: "", description: "" };
+            updateTeachingPanel();
+            teachingPanel.style.display = 'block';
+            respondToQuery("Let's create a new command! What phrases should trigger this command? (Say or type them separated by commas)", true);
+        }
+
+        function updateTeachingPanel() {
+            teachingStepDisplay.textContent = teachingStep;
+            
+            switch(teachingStep) {
+                case 1:
+                    teachingContent.innerHTML = `
+                        <p>What words or phrases should activate this command?</p>
+                        <p><i>Example: "turn on lights", "lights on", "illuminate"</i></p>
+                        <input type="text" id="commandTriggers" placeholder="trigger phrases (comma separated)" style="width: 100%; padding: 8px; margin: 5px 0;">
+                        <button onclick="processTeachingStep()">Next</button>
+                    `;
+                    break;
+                case 2:
+                    teachingContent.innerHTML = `
+                        <p>What should I do when I hear this command?</p>
+                        <p><i>Example: "Turn on the living room lights"</i></p>
+                        <textarea id="commandAction" placeholder="What I should do..." style="width: 100%; padding: 8px; margin: 5px 0; height: 60px;"></textarea>
+                        <button onclick="processTeachingStep()">Next</button>
+                    `;
+                    break;
+                case 3:
+                    teachingContent.innerHTML = `
+                        <p>How should I describe this command in the help list?</p>
+                        <p><i>Example: "Turns on the living room lights"</i></p>
+                        <input type="text" id="commandDescription" placeholder="Command description" style="width: 100%; padding: 8px; margin: 5px 0;">
+                        <button onclick="saveNewCommand()">Save Command</button>
+                    `;
+                    break;
+            }
+        }
+
+        function processTeachingStep() {
+            switch(teachingStep) {
+                case 1:
+                    const triggersInput = document.getElementById('commandTriggers').value;
+                    if (!triggersInput.trim()) {
+                        alert("Please enter at least one trigger phrase");
+                        return;
+                    }
+                    newCommand.triggers = triggersInput.split(',').map(t => t.trim()).filter(t => t);
+                    teachingStep++;
+                    updateTeachingPanel();
+                    respondToQuery(`Got it! Now, what should I do when I hear "${newCommand.triggers[0]}"?`, true);
+                    break;
+                case 2:
+                    const actionInput = document.getElementById('commandAction').value;
+                    if (!actionInput.trim()) {
+                        alert("Please specify what I should do");
+                        return;
+                    }
+                    newCommand.action = actionInput;
+                    teachingStep++;
+                    updateTeachingPanel();
+                    respondToQuery("Great! Finally, how should I describe this command in the help list?", true);
+                    break;
+            }
+        }
+
+        function saveNewCommand() {
+            const descriptionInput = document.getElementById('commandDescription').value;
+            if (!descriptionInput.trim()) {
+                alert("Please enter a description");
+                return;
+            }
+            newCommand.description = descriptionInput;
+
+            // Create the command function dynamically
+            const actionFunction = `function() { respondToQuery("${newCommand.action.replace(/"/g, '\\"')}"); }`;
+            
+            customCommands.push({
+                triggers: newCommand.triggers,
+                action: actionFunction,
+                description: newCommand.description
+            });
+
+            saveCommandsToStorage();
+            endTeaching();
+            respondToQuery(`Command "${newCommand.triggers[0]}" saved successfully! Try saying it now.`, true);
+            updateCommandsList();
+        }
+
+        function cancelTeaching() {
+            endTeaching();
+            respondToQuery("Command creation cancelled.", true);
+        }
+
+        function endTeaching() {
+            isTeaching = false;
+            teachingPanel.style.display = 'none';
+        }
+
+        // ======================
+        // COMMAND MANAGEMENT
+        // ======================
+        function checkForCustomCommand(message, isSystemMessage = false) {
+            // Skip command processing for system messages and empty messages
+            if (isSystemMessage || !message.trim()) return false;
+            
+            const lowerMsg = message.toLowerCase();
+            
+            // Skip if the message is from the bot (to prevent self-triggering)
+            if (lowerMsg.startsWith("bot:")) return false;
+            
+            // Then check regular commands
+            for (const command of customCommands) {
+                for (const trigger of command.triggers) {
+                    if (lowerMsg.includes(trigger.toLowerCase())) {
+                        displayMessage(`Executing command: "${trigger}"`, 'system');
+                        try {
+                            // For pre-defined functions
+                            if (typeof command.action === 'string' && command.action.endsWith(')')) {
+                                eval(command.action);
+                            } 
+                            // For dynamically created functions
+                            else if (typeof command.action === 'function') {
+                                command.action();
+                            }
+                        } catch (e) {
+                            console.error("Error executing command:", e);
+                            respondToQuery("Sorry, I had trouble executing that command.", true);
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function deleteCommand(index) {
+            if (confirm(`Delete command "${customCommands[index].triggers[0]}"?`)) {
+                customCommands.splice(index, 1);
+                saveCommandsToStorage();
+                updateCommandsList();
+                respondToQuery("Command deleted.", true);
+            }
+        }
+
+        function saveCommandsToStorage() {
+            localStorage.setItem('customCommands', JSON.stringify(customCommands));
+        }
+
+        function showAvailableCommands() {
+            const response = "Here's what you can say:\n" + 
+                customCommands.map(cmd => 
+                    `• "${cmd.triggers[0]}" - ${cmd.description}`
+                ).join('\n');
+            
+            respondToQuery(response);
+            updateCommandsList();
+            commandsPanel.style.display = 'block';
+        }
+
+        function updateCommandsList() {
+            commandsList.innerHTML = customCommands.map((cmd, index) => `
+                <div class="command-item">
+                    <div>
+                        <span class="command-trigger">${cmd.triggers[0]}</span>
+                        <span class="command-action">${cmd.description}</span>
+                    </div>
+                    ${index >= 5 ? `<span class="delete-command" onclick="deleteCommand(${index})">✕</span>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function toggleCommandsPanel() {
+            commandsPanel.style.display = commandsPanel.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('commandsBtn').textContent = 
+                commandsPanel.style.display === 'block' ? 'Hide My Commands' : 'Show My Commands';
+            if (commandsPanel.style.display === 'block') updateCommandsList();
+        }
+
+        function clearChat() {
+            document.getElementById('chatbox').innerHTML = '';
+            respondToQuery("Chat cleared. What would you like to talk about now?");
+        }
+
+        // ======================
+        // CORE CHAT FUNCTIONS
+        // ======================
+        function toggleSpeechRecognition() {
+            if (isListening) {
+                recognition.stop();
+                micButton.classList.remove('listening');
+                statusElement.textContent = "";
+                isListening = false;
+            } else {
+                recognition.start();
+                micButton.classList.add('listening');
+                statusElement.textContent = "Listening...";
+                isListening = true;
+            }
+        }
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('userInput').value = transcript;
+            sendMessage();
+        };
+
+        recognition.onerror = (event) => {
+            statusElement.textContent = `Error: ${event.error}`;
+            micButton.classList.remove('listening');
+            isListening = false;
+        };
+
+        recognition.onend = () => {
+            if (isListening) recognition.start();
+            else {
+                micButton.classList.remove('listening');
+                statusElement.textContent = "";
+            }
+        };
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if (!message) return;
+            
+            displayMessage(message, 'user');
+            
+            setTimeout(() => {
+                if (!checkForCustomCommand(message)) {
+                    const response = generateResponse(message);
+                    respondToQuery(response);
+                }
+            }, 500);
+            
+            userInput.value = '';
+            userInput.focus();
+        }
+
+        function generateResponse(message) {
+            const lowerMsg = message.toLowerCase();
+            
+            if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
+                return randomChoice([
+                    "Hello there! You can teach me new commands by saying 'create new command'",
+                    "Hi! Try creating your own voice commands - just say 'teach me'",
+                    "Greetings! I can learn new commands if you teach me."
+                ]);
+            }
+            
+            if (lowerMsg.includes('bye') || lowerMsg.includes('goodbye')) {
+                return randomChoice([
+                    "Goodbye! Your custom commands will be saved for next time!",
+                    "See you later! Don't forget you can add more commands when you return.",
+                    "Farewell! Your personal commands are saved in your browser."
+                ]);
+            }
+            
+            return randomChoice([
+                "I didn't understand that. Try teaching me a new command by saying 'create new command'",
+                "That's interesting! Did you know you can create custom commands for me?",
+                "I'm still learning. You can teach me to respond to that by creating a new command."
+            ]);
+        }
+
+        function respondToQuery(response, isSystemMessage = false) {
+            lastBotResponse = response;
+            displayMessage(response, isSystemMessage ? 'system' : 'bot');
+            
+            if (!isSystemMessage) {
+                const shouldSpeak = document.getElementById('speechToggle').checked &&
+                                  !document.getElementById('dontSpeakAutomatically').checked &&
+                                  (!document.getElementById('onlySpeakForCommands').checked || 
+                                   response.includes("Executing command:"));
+                
+                if (shouldSpeak) {
+                    speak(response);
+                }
+            }
+        }
+
+        function displayMessage(message, sender) {
+            const chatbox = document.getElementById('chatbox');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageDiv.textContent = `You: ${message}`;
+            } else if (sender === 'system') {
+                messageDiv.textContent = `System: ${message}`;
+            } else if (sender === 'bot') {
+                messageDiv.textContent = `Bot: ${message}`;
+            }
+            
+            chatbox.appendChild(messageDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
         function speak(text) {
-            // Check if speech is disabled
-            if (!document.getElementById('speechToggle').checked) {
-                return;
-            }
-            
-            // Check if user wants manual control only
-            if (document.getElementById('dontSpeakAutomatically').checked) {
-                return;
-            }
-            
-            // Check if we should only speak for commands
-            if (document.getElementById('onlySpeakForCommands').checked && 
-                !lastBotResponse.includes("Executing command:")) {
-                return;
-            }
-            
             // Throttle speech frequency
             const now = Date.now();
             if (now - lastSpeechTime < speechDelay) {
@@ -108,7 +640,6 @@
             }
             lastSpeechTime = now;
             
-            // Rest of the speak function remains the same
             if (synth.speaking) synth.cancel();
             
             currentUtterance = new SpeechSynthesisUtterance(text);
@@ -127,43 +658,54 @@
             synth.speak(currentUtterance);
         }
 
-        // Modify the respondToQuery function
-        function respondToQuery(response, isCommand = false) {
-            lastBotResponse = response;
-            displayMessage(response, 'bot');
+        function getPreferredVoice() {
+            const voices = synth.getVoices();
+            const preferredVoices = [
+                'Google UK English Female',
+                'Microsoft Zira - English (United States)',
+                'Samantha'
+            ];
             
-            // Only speak if it's a command or settings allow it
-            if (isCommand || 
-                (!document.getElementById('onlySpeakForCommands').checked &&
-                 !document.getElementById('dontSpeakAutomatically').checked)) {
-                speak(response);
+            for (const voiceName of preferredVoices) {
+                const voice = voices.find(v => v.name === voiceName);
+                if (voice) return voice;
             }
+            
+            return voices.find(v => v.lang.includes('en')) || voices[0];
         }
 
-        // Update command executions to mark them as commands
-        function checkForCustomCommand(message) {
-            const lowerMsg = message.toLowerCase();
-            
-            for (const command of customCommands) {
-                for (const trigger of command.triggers) {
-                    if (lowerMsg.includes(trigger.toLowerCase())) {
-                        displayMessage(`Executing command: "${trigger}"`, 'command');
-                        try {
-                            if (typeof command.action === 'string' && command.action.endsWith(')')) {
-                                eval(command.action);
-                            } else if (typeof command.action === 'function') {
-                                command.action();
-                            }
-                        } catch (e) {
-                            console.error("Error executing command:", e);
-                            respondToQuery("Sorry, I had trouble executing that command.", true);
-                        }
-                        return true;
-                    }
-                }
-            }
-            return false;
+        function speakLastResponse() {
+            if (lastBotResponse) speak(lastBotResponse);
         }
+
+        function stopSpeaking() {
+            synth.cancel();
+            speakBtn.disabled = false;
+            stopSpeakBtn.disabled = true;
+        }
+
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // ======================
+        // INITIALIZATION
+        // ======================
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = getPreferredVoice;
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const greeting = "Hello! I'm a chatbot that learns from you. Say 'create new command' to teach me something new, or 'help' to see existing commands.";
+                respondToQuery(greeting);
+                updateCommandsList();
+            }, 1000);
+        });
     </script>
 </body>
 </html>
