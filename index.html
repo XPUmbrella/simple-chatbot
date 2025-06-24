@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Voice-Controlled Chatbot</title>
+    <title>Custom Voice Command Chatbot</title>
     <style>
+        :root {
+            --primary: #4285f4;
+            --danger: #ff4444;
+            --success: #34a853;
+            --warning: #ffbb33;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 600px;
@@ -11,11 +17,17 @@
             background-color: #f5f5f5;
         }
         h1 {
-            color: #4285f4;
+            color: var(--primary);
             text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
         }
         #chatbox {
-            height: 400px;
+            height: 300px;
             border: 1px solid #ddd;
             padding: 15px;
             overflow-y: auto;
@@ -43,6 +55,18 @@
             word-wrap: break-word;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
+        .command-message {
+            background: #fff8e1;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin: 8px auto;
+            max-width: 90%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
         .input-group {
             display: flex;
             gap: 10px;
@@ -57,7 +81,7 @@
         }
         button {
             padding: 12px 20px;
-            background: #4285f4;
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 20px;
@@ -66,10 +90,10 @@
             transition: all 0.2s;
         }
         button:hover {
-            background: #3367d6;
+            filter: brightness(1.1);
         }
         #micButton {
-            background: #ff4444;
+            background: var(--danger);
             width: 50px;
             padding: 0;
             display: flex;
@@ -98,7 +122,7 @@
             margin-top: 10px;
         }
         .voice-btn {
-            background: #34a853;
+            background: var(--success);
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -110,10 +134,41 @@
         .voice-btn:disabled {
             background: #cccccc;
         }
+        #commandsBtn {
+            background: var(--warning);
+            margin: 10px auto;
+            display: block;
+        }
+        #commandsPanel {
+            display: none;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .command-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .command-item:last-child {
+            border-bottom: none;
+        }
+        .command-trigger {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .command-action {
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <h1>Voice-Controlled Chatbot</h1>
+    <h1>Custom Voice Command Chatbot</h1>
+    <p class="subtitle">Try saying "help" or "what can I say?"</p>
+    
     <div id="chatbox"></div>
     
     <div class="input-group">
@@ -127,17 +182,24 @@
         <button class="voice-btn" id="stopSpeakBtn" onclick="stopSpeaking()" disabled>⏹️</button>
     </div>
     
+    <button id="commandsBtn" onclick="toggleCommandsPanel()">Show Voice Commands</button>
+    <div id="commandsPanel">
+        <h3>Available Voice Commands</h3>
+        <div id="commandsList"></div>
+    </div>
+    
     <p id="status"></p>
 
     <script>
-        // Speech recognition setup
+        // ======================
+        // CORE SETUP
+        // ======================
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
-        // Speech synthesis setup
         const synth = window.speechSynthesis;
         let currentUtterance = null;
         let isListening = false;
@@ -148,8 +210,107 @@
         const statusElement = document.getElementById('status');
         const speakBtn = document.getElementById('speakBtn');
         const stopSpeakBtn = document.getElementById('stopSpeakBtn');
+        const commandsPanel = document.getElementById('commandsPanel');
+        const commandsList = document.getElementById('commandsList');
 
-        // Toggle speech recognition
+        // ======================
+        // CUSTOM VOICE COMMANDS
+        // ======================
+        const customCommands = [
+            {
+                triggers: ["help", "what can I say", "commands"],
+                action: () => showAvailableCommands(),
+                description: "Show available voice commands"
+            },
+            {
+                triggers: ["clear chat", "clean screen", "start over"],
+                action: () => clearChat(),
+                description: "Clear the conversation"
+            },
+            {
+                triggers: ["stop speaking", "be quiet", "shut up"],
+                action: () => stopSpeaking(),
+                description: "Stop the bot from speaking"
+            },
+            {
+                triggers: ["repeat", "say that again", "once more"],
+                action: () => speakLastResponse(),
+                description: "Repeat the last response"
+            },
+            {
+                triggers: ["your name", "who are you"],
+                action: () => respondToQuery("I'm VoiceBot 3.0 with customizable commands!"),
+                description: "Ask the bot's name"
+            },
+            {
+                triggers: ["time", "what time is it"],
+                action: () => respondToQuery(`The current time is ${new Date().toLocaleTimeString()}`),
+                description: "Get current time"
+            },
+            {
+                triggers: ["date", "what's today's date"],
+                action: () => respondToQuery(`Today is ${new Date().toLocaleDateString()}`),
+                description: "Get current date"
+            },
+            {
+                triggers: ["thank you", "thanks"],
+                action: () => respondToQuery("You're welcome! Is there anything else I can help with?"),
+                description: "Thank the bot"
+            }
+        ];
+
+        // ======================
+        // COMMAND FUNCTIONS
+        // ======================
+        function checkForCustomCommand(message) {
+            const lowerMsg = message.toLowerCase();
+            for (const command of customCommands) {
+                for (const trigger of command.triggers) {
+                    if (lowerMsg.includes(trigger)) {
+                        displayMessage(`Executing command: "${trigger}"`, 'command');
+                        command.action();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function showAvailableCommands() {
+            const response = "Here's what you can say:\n" + 
+                customCommands.map(cmd => 
+                    `• "${cmd.triggers[0]}" - ${cmd.description}`
+                ).join('\n');
+            
+            respondToQuery(response);
+            updateCommandsList();
+            commandsPanel.style.display = 'block';
+        }
+
+        function updateCommandsList() {
+            commandsList.innerHTML = customCommands.map(cmd => `
+                <div class="command-item">
+                    <span class="command-trigger">${cmd.triggers[0]}</span>
+                    <span class="command-action">${cmd.description}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearChat() {
+            document.getElementById('chatbox').innerHTML = '';
+            respondToQuery("Chat cleared. What would you like to talk about now?");
+        }
+
+        function toggleCommandsPanel() {
+            commandsPanel.style.display = commandsPanel.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('commandsBtn').textContent = 
+                commandsPanel.style.display === 'block' ? 'Hide Voice Commands' : 'Show Voice Commands';
+            if (commandsPanel.style.display === 'block') updateCommandsList();
+        }
+
+        // ======================
+        // CORE CHAT FUNCTIONS
+        // ======================
         function toggleSpeechRecognition() {
             if (isListening) {
                 recognition.stop();
@@ -164,7 +325,6 @@
             }
         }
 
-        // Handle speech recognition
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             document.getElementById('userInput').value = transcript;
@@ -178,74 +338,12 @@
         };
 
         recognition.onend = () => {
-            if (isListening) {
-                recognition.start();
-            } else {
+            if (isListening) recognition.start();
+            else {
                 micButton.classList.remove('listening');
                 statusElement.textContent = "";
             }
         };
-
-        // Enhanced knowledge base
-        const knowledgeBase = {
-            greetings: ["hello", "hi", "hey", "greetings"],
-            farewells: ["bye", "goodbye", "see you", "farewell"],
-            questions: {
-                "your name": "I'm VoiceBot 2.0, your voice-enabled assistant!",
-                "the time": `It's currently ${new Date().toLocaleTimeString()}`,
-                "the date": `Today is ${new Date().toLocaleDateString()}`,
-                "weather": "I can't check real-time weather, but you can try weather.com!",
-                "speak": "I can both understand speech and respond with voice!",
-                "who made you": "I was created by a developer using web speech technologies!",
-                "help": "You can ask me about time, date, or just chat. Try speaking or typing!"
-            },
-            responses: {
-                default: [
-                    "That's interesting! Tell me more.",
-                    "I'd love to hear more about that.",
-                    "How does that make you feel?",
-                    "Let me think about that... yes, very interesting!"
-                ],
-                greeting: [
-                    "Hello there! How can I help you today?",
-                    "Hi! I'm ready to chat with you.",
-                    "Greetings! What's on your mind?"
-                ],
-                farewell: [
-                    "Goodbye! Come back anytime to chat.",
-                    "See you later! It was nice talking to you.",
-                    "Have a wonderful day!"
-                ]
-            }
-        };
-
-        function analyzeMessage(message) {
-            const lowerMsg = message.toLowerCase();
-            
-            // Check greetings
-            if (knowledgeBase.greetings.some(word => lowerMsg.includes(word))) {
-                return { type: "greeting", response: randomChoice(knowledgeBase.responses.greeting) };
-            }
-            
-            // Check farewells
-            if (knowledgeBase.farewells.some(word => lowerMsg.includes(word))) {
-                return { type: "farewell", response: randomChoice(knowledgeBase.responses.farewell) };
-            }
-            
-            // Check specific questions
-            for (const [question, answer] of Object.entries(knowledgeBase.questions)) {
-                if (lowerMsg.includes(question)) {
-                    return { type: "fact", response: answer };
-                }
-            }
-            
-            // Default response
-            return { type: "default", response: randomChoice(knowledgeBase.responses.default) };
-        }
-
-        function randomChoice(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
 
         function sendMessage() {
             const userInput = document.getElementById('userInput');
@@ -256,30 +354,62 @@
             displayMessage(message, 'user');
             
             setTimeout(() => {
-                const analysis = analyzeMessage(message);
-                lastBotResponse = analysis.response;
-                displayMessage(analysis.response, 'bot');
-                speak(analysis.response);
+                if (!checkForCustomCommand(message)) {
+                    const response = generateResponse(message);
+                    respondToQuery(response);
+                }
             }, 500);
             
             userInput.value = '';
             userInput.focus();
         }
 
+        function generateResponse(message) {
+            // Simple response generation if no command matched
+            const lowerMsg = message.toLowerCase();
+            
+            if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
+                return randomChoice([
+                    "Hello there! How can I help you today?",
+                    "Hi! What can I do for you?",
+                    "Greetings! I'm ready to help."
+                ]);
+            }
+            
+            if (lowerMsg.includes('bye') || lowerMsg.includes('goodbye')) {
+                return randomChoice([
+                    "Goodbye! Have a great day!",
+                    "See you later!",
+                    "Farewell! Come back anytime."
+                ]);
+            }
+            
+            return randomChoice([
+                "Interesting! Tell me more about that.",
+                "I understand. What else would you like to discuss?",
+                "That's a good point. Can you elaborate?",
+                "I see. How does that make you feel?"
+            ]);
+        }
+
+        function respondToQuery(response) {
+            lastBotResponse = response;
+            displayMessage(response, 'bot');
+            speak(response);
+        }
+
         function displayMessage(message, sender) {
             const chatbox = document.getElementById('chatbox');
             const messageDiv = document.createElement('div');
             messageDiv.className = `${sender}-message`;
-            messageDiv.textContent = sender === 'user' ? `You: ${message}` : `Bot: ${message}`;
+            messageDiv.textContent = sender === 'user' ? `You: ${message}` : 
+                                  sender === 'command' ? `System: ${message}` : `Bot: ${message}`;
             chatbox.appendChild(messageDiv);
             chatbox.scrollTop = chatbox.scrollHeight;
         }
 
-        // Text-to-speech function
         function speak(text) {
-            if (synth.speaking) {
-                synth.cancel();
-            }
+            if (synth.speaking) synth.cancel();
             
             currentUtterance = new SpeechSynthesisUtterance(text);
             currentUtterance.voice = getPreferredVoice();
@@ -314,9 +444,7 @@
         }
 
         function speakLastResponse() {
-            if (lastBotResponse) {
-                speak(lastBotResponse);
-            }
+            if (lastBotResponse) speak(lastBotResponse);
         }
 
         function stopSpeaking() {
@@ -325,25 +453,38 @@
             stopSpeakBtn.disabled = true;
         }
 
-        // Initialize voices
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // ======================
+        // INITIALIZATION
+        // ======================
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = getPreferredVoice;
         }
 
-        // Event listeners
         document.getElementById('userInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
 
-        // Initial greeting
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const greeting = randomChoice(knowledgeBase.responses.greeting);
-                displayMessage(greeting, 'bot');
-                lastBotResponse = greeting;
-                speak(greeting);
+                const greeting = "Hello! I'm a chatbot with customizable voice commands. Try saying 'help' to see what you can ask me!";
+                respondToQuery(greeting);
+                updateCommandsList();
             }, 1000);
         });
+
+        // ======================
+        // ADDING NEW COMMANDS (EXAMPLE)
+        // ======================
+        // To add new commands dynamically:
+        // customCommands.push({
+        //     triggers: ["new command", "alternative trigger"],
+        //     action: () => { /* do something */ },
+        //     description: "What this command does"
+        // });
     </script>
 </body>
 </html>
