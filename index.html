@@ -311,6 +311,38 @@
             color: #6c757d;
             margin-top: 4px;
         }
+        #ideasPanel {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .command-idea {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--warning);
+        }
+        .idea-trigger {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+        .idea-response {
+            color: #495057;
+            font-style: italic;
+            margin-bottom: 10px;
+            padding-left: 10px;
+            border-left: 2px solid #dee2e6;
+        }
+        .command-idea button {
+            padding: 8px 12px;
+            font-size: 14px;
+            background: var(--success);
+        }
     </style>
 </head>
 <body>
@@ -357,6 +389,9 @@
         <button onclick="toggleCommandsPanel()" style="width:100%">
             <span style="font-size:1.1em">📋</span> View All Commands
         </button>
+        <button onclick="toggleIdeasPanel()" style="width:100%;margin-top:12px;background:var(--warning);color:var(--text)">
+            💡 Get Command Ideas
+        </button>
     </div>
     
     <div class="control-panel" id="commandsPanel" style="display:none">
@@ -395,6 +430,33 @@
         </div>
     </div>
 
+    <div class="control-panel" id="ideasPanel" style="display:none">
+        <div class="panel-header">
+            <div class="panel-title">Command Ideas</div>
+            <button onclick="toggleIdeasPanel()" style="background:transparent;color:var(--primary);padding:0">✕</button>
+        </div>
+        <div class="command-idea">
+            <div class="idea-trigger">"weather, what's the weather"</div>
+            <div class="idea-response">"Currently sunny and 72°F in your area"</div>
+            <button onclick="useIdea('weather, what\'s the weather', 'Currently sunny and 72°F in your area', 'Provides weather information')">Use This</button>
+        </div>
+        <div class="command-idea">
+            <div class="idea-trigger">"joke, tell me a joke"</div>
+            <div class="idea-response">"Why don't scientists trust atoms? Because they make up everything!"</div>
+            <button onclick="useIdea('joke, tell me a joke', 'Why don\'t scientists trust atoms? Because they make up everything!', 'Tells a funny joke')">Use This</button>
+        </div>
+        <div class="command-idea">
+            <div class="idea-trigger">"remind me to [task], remember [task]"</div>
+            <div class="idea-response">"I'll remind you to [task] later"</div>
+            <button onclick="useIdea('remind me to, remember', 'I\'ll remind you to [task] later', 'Sets reminders')">Use This</button>
+        </div>
+        <div class="command-idea">
+            <div class="idea-trigger">"calculate [equation], what's [equation]"</div>
+            <div class="idea-response">"The answer to [equation] is [result]"</div>
+            <button onclick="useIdea('calculate, what\'s', 'The answer to [equation] is [result]', 'Does simple math calculations')">Use This</button>
+        </div>
+    </div>
+
     <script>
         // ======================
         // CORE SETUP
@@ -418,6 +480,7 @@
         const commandsPanel = document.getElementById('commandsPanel');
         const commandsList = document.getElementById('commandsList');
         const addCommandPanel = document.getElementById('addCommandPanel');
+        const ideasPanel = document.getElementById('ideasPanel');
 
         // Load commands from localStorage
         let customCommands = JSON.parse(localStorage.getItem('customCommands')) || [
@@ -500,9 +563,18 @@
             if (commandsPanel.style.display === 'block') updateCommandsList();
         }
 
+        function toggleIdeasPanel() {
+            ideasPanel.style.display = ideasPanel.style.display === 'none' ? 'block' : 'none';
+            if (ideasPanel.style.display === 'block') {
+                commandsPanel.style.display = 'none';
+                addCommandPanel.style.display = 'none';
+            }
+        }
+
         function showAddCommandPanel() {
             addCommandPanel.style.display = 'block';
             commandsPanel.style.display = 'none';
+            ideasPanel.style.display = 'none';
             document.getElementById('newCommandTriggers').focus();
         }
 
@@ -511,6 +583,14 @@
             document.getElementById('newCommandTriggers').value = '';
             document.getElementById('newCommandResponse').value = '';
             document.getElementById('newCommandDesc').value = '';
+        }
+
+        function useIdea(triggers, response, description) {
+            document.getElementById('newCommandTriggers').value = triggers;
+            document.getElementById('newCommandResponse').value = response;
+            document.getElementById('newCommandDesc').value = description;
+            toggleIdeasPanel();
+            showAddCommandPanel();
         }
 
         function updateCommandsList() {
