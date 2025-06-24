@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learning Chatbot with Memory</title>
+    <title>Ultimate Learning Chatbot</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -26,6 +26,7 @@
             background-color: var(--background);
             color: var(--text);
             line-height: 1.6;
+            position: relative;
         }
 
         h1 {
@@ -33,6 +34,45 @@
             text-align: center;
             margin-bottom: 10px;
             font-weight: 700;
+        }
+
+        .clock-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .digital-clock {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .digital-clock:hover {
+            transform: scale(1.05);
+        }
+
+        .fullscreen-clock {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 4rem;
+            cursor: pointer;
+        }
+
+        .fullscreen-clock .date {
+            font-size: 2rem;
+            margin-top: 20px;
         }
 
         .chat-container {
@@ -142,6 +182,15 @@
             box-shadow: var(--shadow);
         }
 
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         #sendButton {
             margin-left: 0;
         }
@@ -189,17 +238,47 @@
             font-size: 1.1em;
         }
 
-        .control-buttons {
+        .memory-actions {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-top: 15px;
             flex-wrap: wrap;
+        }
+
+        .memory-actions button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        #fileInput {
+            display: none;
         }
 
         .tts-controls {
             display: flex;
             gap: 10px;
+            margin-top: 15px;
             flex-wrap: wrap;
+        }
+
+        #readBtn {
+            background-color: var(--success);
+            color: white;
+        }
+
+        #pauseBtn {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        #resumeBtn {
+            background-color: var(--info);
+            color: white;
+        }
+
+        #stopBtn {
+            background-color: var(--danger);
+            color: white;
         }
 
         .typing-indicator {
@@ -286,17 +365,23 @@
             .message {
                 max-width: 90%;
             }
-            .control-buttons {
-                flex-direction: column;
-            }
-            .tts-controls {
-                flex-direction: column;
+            .memory-actions button {
+                min-width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <h1>Learning Chatbot with Memory</h1>
+    <div class="clock-container">
+        <div class="digital-clock" id="digitalClock"></div>
+    </div>
+
+    <div class="fullscreen-clock" id="fullscreenClock" style="display: none;">
+        <div class="time" id="fsTime"></div>
+        <div class="date" id="fsDate"></div>
+    </div>
+
+    <h1>Ultimate Learning Chatbot</h1>
     
     <div class="chat-container">
         <div class="chat-header">
@@ -323,11 +408,20 @@
     
     <div class="control-panel">
         <div class="panel-header">
-            <div class="panel-title">Controls</div>
+            <div class="panel-title">Memory Controls</div>
         </div>
-        <div class="control-buttons">
-            <button id="showMemoryBtn">Show My Memories</button>
+        <div class="memory-actions">
+            <button id="showMemoryBtn">Show Memories</button>
+            <button id="downloadMemoryBtn">Download Memories</button>
+            <button id="uploadMemoryBtn">Upload Memories</button>
             <button id="clearMemoryBtn">Clear Memories</button>
+        </div>
+        <input type="file" id="fileInput" accept=".txt">
+    </div>
+
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Voice Controls</div>
         </div>
         <div class="tts-controls">
             <button id="readBtn">🔊 Read Last</button>
@@ -371,6 +465,7 @@
         const typingIndicator = document.getElementById('typing-indicator');
         const memoryModal = document.getElementById('memoryModal');
         const memoryList = document.getElementById('memoryList');
+        const fileInput = document.getElementById('fileInput');
 
         // Initialize memory systems
         if (!localStorage.getItem('chatbotMemory')) {
@@ -385,6 +480,43 @@
             lastTopic: null,
             lastEntities: {}
         };
+
+        // ======================
+        // DIGITAL CLOCK FUNCTIONS
+        // ======================
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const dateStr = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            // Update regular clock
+            document.getElementById('digitalClock').textContent = `${timeStr} | ${dateStr}`;
+
+            // Update fullscreen clock if visible
+            if (document.getElementById('fullscreenClock').style.display === 'flex') {
+                document.getElementById('fsTime').textContent = timeStr;
+                document.getElementById('fsDate').textContent = dateStr;
+            }
+        }
+
+        function toggleFullscreenClock() {
+            const fsClock = document.getElementById('fullscreenClock');
+            fsClock.style.display = fsClock.style.display === 'none' ? 'flex' : 'none';
+            updateClock(); // Force immediate update when toggling
+        }
+
+        // Initialize clock
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Make clock clickable for fullscreen
+        document.getElementById('digitalClock').addEventListener('click', toggleFullscreenClock);
+        document.getElementById('fullscreenClock').addEventListener('click', toggleFullscreenClock);
 
         // ======================
         // MEMORY FUNCTIONS
@@ -452,8 +584,67 @@
         function clearAllMemories() {
             if (confirm("Are you sure you want to clear ALL memories?")) {
                 localStorage.setItem('chatbotMemory', JSON.stringify({}));
+                localStorage.setItem('chatHistory', JSON.stringify([]));
                 respondToQuery("All memories have been cleared.", true);
             }
+        }
+
+        // ======================
+        // MEMORY IMPORT/EXPORT
+        // ======================
+        function downloadMemories() {
+            const memory = JSON.parse(localStorage.getItem('chatbotMemory') || '{}');
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            
+            const data = {
+                memory: memory,
+                history: history,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chatbot-memory-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            respondToQuery("Memories downloaded as TXT file.", true);
+        }
+
+        function uploadMemories() {
+            fileInput.click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.memory) {
+                        localStorage.setItem('chatbotMemory', JSON.stringify(data.memory));
+                    }
+                    if (data.history) {
+                        localStorage.setItem('chatHistory', JSON.stringify(data.history));
+                    }
+                    
+                    respondToQuery("Memories successfully uploaded from file!", true);
+                    showAllMemories();
+                } catch (error) {
+                    respondToQuery("Error: Invalid memory file format.", true);
+                    console.error("File upload error:", error);
+                }
+                // Reset file input
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         // ======================
@@ -631,7 +822,7 @@
         }
 
         function shouldSpeak() {
-            return document.getElementById('speechToggle')?.checked || true;
+            return true; // Always speak for this implementation
         }
 
         function randomChoice(array) {
@@ -744,7 +935,10 @@
 
             // Memory controls
             document.getElementById("showMemoryBtn").addEventListener("click", showAllMemories);
+            document.getElementById("downloadMemoryBtn").addEventListener("click", downloadMemories);
+            document.getElementById("uploadMemoryBtn").addEventListener("click", uploadMemories);
             document.getElementById("clearMemoryBtn").addEventListener("click", clearAllMemories);
+            fileInput.addEventListener("change", handleFileUpload);
 
             // TTS controls
             document.getElementById("readBtn").addEventListener("click", readLastMessage);
@@ -786,10 +980,10 @@
 
             // Add welcome message
             setTimeout(() => {
-                addMessage("bot", "Hello! I'm a learning chatbot. You can teach me things by saying:");
-                addMessage("bot", "- 'Remember my name is Alex'");
-                addMessage("bot", "- 'Recall my name' later to check");
-                addMessage("bot", "- 'What do you know about names?' to search memories");
+                addMessage("bot", "Hello! I'm a learning chatbot with memory. You can:");
+                addMessage("bot", "1. Teach me: 'Remember my name is Alex'");
+                addMessage("bot", "2. Ask me: 'Recall my name'");
+                addMessage("bot", "3. Manage memories using the control panel below");
             }, 500);
         }
 
