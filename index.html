@@ -1,64 +1,142 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Smarter Chatbot</title>
+    <title>Chatbot with Voice</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
         #chatbox {
-            width: 500px;
             height: 400px;
             border: 1px solid #ddd;
             padding: 15px;
             overflow-y: auto;
             margin-bottom: 15px;
             background: #f9f9f9;
+            border-radius: 10px;
         }
         .user-message {
             background: #e3f2fd;
-            padding: 8px 12px;
+            padding: 10px 15px;
             border-radius: 18px;
-            margin: 5px 0;
+            margin: 8px 0;
             max-width: 80%;
             margin-left: auto;
+            word-wrap: break-word;
         }
         .bot-message {
             background: #f1f1f1;
-            padding: 8px 12px;
+            padding: 10px 15px;
             border-radius: 18px;
-            margin: 5px 0;
+            margin: 8px 0;
             max-width: 80%;
+            word-wrap: break-word;
         }
         #userInput {
-            width: 400px;
-            padding: 10px;
+            width: 70%;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 20px;
+            margin-right: 10px;
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 20px;
             background: #4285f4;
             color: white;
             border: none;
             border-radius: 20px;
             cursor: pointer;
+            margin: 5px;
+        }
+        #micButton {
+            background: #ff4444;
+        }
+        #micButton.listening {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
         }
     </style>
 </head>
 <body>
-    <h1>Smart Chatbot</h1>
+    <h1>Voice-Enabled Chatbot</h1>
     <div id="chatbox"></div>
-    <input type="text" id="userInput" placeholder="Ask me anything..." autofocus>
-    <button onclick="sendMessage()">Send</button>
+    <div class="input-group">
+        <input type="text" id="userInput" placeholder="Type or say something..." autofocus>
+        <button onclick="sendMessage()">Send</button>
+        <button id="micButton" onclick="toggleSpeechRecognition()">🎤</button>
+    </div>
+    <p id="status"></p>
 
     <script>
-        // Knowledge base for intelligent responses
+        // Speech recognition setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        let isListening = false;
+        const micButton = document.getElementById('micButton');
+        const statusElement = document.getElementById('status');
+
+        // Toggle speech recognition
+        function toggleSpeechRecognition() {
+            if (isListening) {
+                recognition.stop();
+                micButton.classList.remove('listening');
+                statusElement.textContent = "";
+                isListening = false;
+            } else {
+                recognition.start();
+                micButton.classList.add('listening');
+                statusElement.textContent = "Listening...";
+                isListening = true;
+            }
+        }
+
+        // Handle speech recognition results
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('userInput').value = transcript;
+            sendMessage();
+        };
+
+        recognition.onerror = (event) => {
+            statusElement.textContent = `Error: ${event.error}`;
+            micButton.classList.remove('listening');
+            isListening = false;
+        };
+
+        recognition.onend = () => {
+            if (isListening) {
+                recognition.start(); // Continue listening
+            } else {
+                micButton.classList.remove('listening');
+                statusElement.textContent = "";
+            }
+        };
+
+        // Knowledge base for responses
         const knowledgeBase = {
             greetings: ["hello", "hi", "hey"],
             farewells: ["bye", "goodbye", "see you"],
             questions: {
-                "your name": "I'm ChatBot 2.0!",
+                "your name": "I'm VoiceBot!",
                 "the time": `It's currently ${new Date().toLocaleTimeString()}`,
                 "the date": `Today is ${new Date().toLocaleDateString()}`,
-                "weather": "I can't check real-time weather, but you can try weather.com!"
+                "weather": "I can't check real-time weather, but you can try weather.com!",
+                "speak": "I can understand speech, but I don't have a voice yet. Would you like me to add text-to-speech?"
             },
             responses: {
                 default: ["Interesting!", "Tell me more.", "I see.", "How does that make you feel?"],
@@ -108,9 +186,13 @@
             setTimeout(() => {
                 const analysis = analyzeMessage(message);
                 displayMessage(analysis.response, 'bot');
+                
+                // Optional: Add text-to-speech here
+                // speak(analysis.response);
             }, 500);
             
             userInput.value = '';
+            userInput.focus();
         }
 
         function displayMessage(message, sender) {
@@ -120,6 +202,14 @@
             messageDiv.textContent = sender === 'user' ? `You: ${message}` : `Bot: ${message}`;
             chatbox.appendChild(messageDiv);
             chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        // Optional text-to-speech function
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+            }
         }
 
         // Send message on Enter key
