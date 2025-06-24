@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chatbot with Voice</title>
+    <title>Voice-Controlled Chatbot</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #4285f4;
+            text-align: center;
         }
         #chatbox {
             height: 400px;
@@ -15,32 +20,40 @@
             padding: 15px;
             overflow-y: auto;
             margin-bottom: 15px;
-            background: #f9f9f9;
+            background: white;
             border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .user-message {
             background: #e3f2fd;
             padding: 10px 15px;
-            border-radius: 18px;
+            border-radius: 18px 18px 0 18px;
             margin: 8px 0;
             max-width: 80%;
             margin-left: auto;
             word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .bot-message {
             background: #f1f1f1;
             padding: 10px 15px;
-            border-radius: 18px;
+            border-radius: 18px 18px 18px 0;
             margin: 8px 0;
             max-width: 80%;
             word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
         }
         #userInput {
-            width: 70%;
+            flex: 1;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 20px;
-            margin-right: 10px;
+            font-size: 16px;
         }
         button {
             padding: 12px 20px;
@@ -49,10 +62,19 @@
             border: none;
             border-radius: 20px;
             cursor: pointer;
-            margin: 5px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3367d6;
         }
         #micButton {
             background: #ff4444;
+            width: 50px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #micButton.listening {
             animation: pulse 1.5s infinite;
@@ -62,20 +84,49 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        .input-group {
+        #status {
+            height: 20px;
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        .voice-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .voice-btn {
+            background: #34a853;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
             display: flex;
             align-items: center;
+            justify-content: center;
+        }
+        .voice-btn:disabled {
+            background: #cccccc;
         }
     </style>
 </head>
 <body>
-    <h1>Voice-Enabled Chatbot</h1>
+    <h1>Voice-Controlled Chatbot</h1>
     <div id="chatbox"></div>
+    
     <div class="input-group">
         <input type="text" id="userInput" placeholder="Type or say something..." autofocus>
         <button onclick="sendMessage()">Send</button>
         <button id="micButton" onclick="toggleSpeechRecognition()">🎤</button>
     </div>
+    
+    <div class="voice-controls">
+        <button class="voice-btn" id="speakBtn" onclick="speakLastResponse()" disabled>🔊</button>
+        <button class="voice-btn" id="stopSpeakBtn" onclick="stopSpeaking()" disabled>⏹️</button>
+    </div>
+    
     <p id="status"></p>
 
     <script>
@@ -86,9 +137,17 @@
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
+        // Speech synthesis setup
+        const synth = window.speechSynthesis;
+        let currentUtterance = null;
         let isListening = false;
+        let lastBotResponse = "";
+
+        // DOM elements
         const micButton = document.getElementById('micButton');
         const statusElement = document.getElementById('status');
+        const speakBtn = document.getElementById('speakBtn');
+        const stopSpeakBtn = document.getElementById('stopSpeakBtn');
 
         // Toggle speech recognition
         function toggleSpeechRecognition() {
@@ -105,7 +164,7 @@
             }
         }
 
-        // Handle speech recognition results
+        // Handle speech recognition
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             document.getElementById('userInput').value = transcript;
@@ -120,45 +179,60 @@
 
         recognition.onend = () => {
             if (isListening) {
-                recognition.start(); // Continue listening
+                recognition.start();
             } else {
                 micButton.classList.remove('listening');
                 statusElement.textContent = "";
             }
         };
 
-        // Knowledge base for responses
+        // Enhanced knowledge base
         const knowledgeBase = {
-            greetings: ["hello", "hi", "hey"],
-            farewells: ["bye", "goodbye", "see you"],
+            greetings: ["hello", "hi", "hey", "greetings"],
+            farewells: ["bye", "goodbye", "see you", "farewell"],
             questions: {
-                "your name": "I'm VoiceBot!",
+                "your name": "I'm VoiceBot 2.0, your voice-enabled assistant!",
                 "the time": `It's currently ${new Date().toLocaleTimeString()}`,
                 "the date": `Today is ${new Date().toLocaleDateString()}`,
                 "weather": "I can't check real-time weather, but you can try weather.com!",
-                "speak": "I can understand speech, but I don't have a voice yet. Would you like me to add text-to-speech?"
+                "speak": "I can both understand speech and respond with voice!",
+                "who made you": "I was created by a developer using web speech technologies!",
+                "help": "You can ask me about time, date, or just chat. Try speaking or typing!"
             },
             responses: {
-                default: ["Interesting!", "Tell me more.", "I see.", "How does that make you feel?"],
-                greeting: ["Hello there!", "Hi! How can I help?", "Greetings!"],
-                farewell: ["Goodbye!", "See you later!", "Have a great day!"]
+                default: [
+                    "That's interesting! Tell me more.",
+                    "I'd love to hear more about that.",
+                    "How does that make you feel?",
+                    "Let me think about that... yes, very interesting!"
+                ],
+                greeting: [
+                    "Hello there! How can I help you today?",
+                    "Hi! I'm ready to chat with you.",
+                    "Greetings! What's on your mind?"
+                ],
+                farewell: [
+                    "Goodbye! Come back anytime to chat.",
+                    "See you later! It was nice talking to you.",
+                    "Have a wonderful day!"
+                ]
             }
         };
 
         function analyzeMessage(message) {
             const lowerMsg = message.toLowerCase();
             
-            // Check for greetings
+            // Check greetings
             if (knowledgeBase.greetings.some(word => lowerMsg.includes(word))) {
                 return { type: "greeting", response: randomChoice(knowledgeBase.responses.greeting) };
             }
             
-            // Check for farewells
+            // Check farewells
             if (knowledgeBase.farewells.some(word => lowerMsg.includes(word))) {
                 return { type: "farewell", response: randomChoice(knowledgeBase.responses.farewell) };
             }
             
-            // Check for specific questions
+            // Check specific questions
             for (const [question, answer] of Object.entries(knowledgeBase.questions)) {
                 if (lowerMsg.includes(question)) {
                     return { type: "fact", response: answer };
@@ -179,16 +253,13 @@
             
             if (!message) return;
             
-            // Display user message
             displayMessage(message, 'user');
             
-            // Process and respond
             setTimeout(() => {
                 const analysis = analyzeMessage(message);
+                lastBotResponse = analysis.response;
                 displayMessage(analysis.response, 'bot');
-                
-                // Optional: Add text-to-speech here
-                // speak(analysis.response);
+                speak(analysis.response);
             }, 500);
             
             userInput.value = '';
@@ -204,17 +275,74 @@
             chatbox.scrollTop = chatbox.scrollHeight;
         }
 
-        // Optional text-to-speech function
+        // Text-to-speech function
         function speak(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                window.speechSynthesis.speak(utterance);
+            if (synth.speaking) {
+                synth.cancel();
+            }
+            
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.voice = getPreferredVoice();
+            currentUtterance.pitch = 1;
+            currentUtterance.rate = 1;
+            
+            speakBtn.disabled = true;
+            stopSpeakBtn.disabled = false;
+            
+            currentUtterance.onend = () => {
+                speakBtn.disabled = false;
+                stopSpeakBtn.disabled = true;
+            };
+            
+            synth.speak(currentUtterance);
+        }
+
+        function getPreferredVoice() {
+            const voices = synth.getVoices();
+            const preferredVoices = [
+                'Google UK English Female',
+                'Microsoft Zira - English (United States)',
+                'Samantha'
+            ];
+            
+            for (const voiceName of preferredVoices) {
+                const voice = voices.find(v => v.name === voiceName);
+                if (voice) return voice;
+            }
+            
+            return voices.find(v => v.lang.includes('en')) || voices[0];
+        }
+
+        function speakLastResponse() {
+            if (lastBotResponse) {
+                speak(lastBotResponse);
             }
         }
 
-        // Send message on Enter key
+        function stopSpeaking() {
+            synth.cancel();
+            speakBtn.disabled = false;
+            stopSpeakBtn.disabled = true;
+        }
+
+        // Initialize voices
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = getPreferredVoice;
+        }
+
+        // Event listeners
         document.getElementById('userInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
+        });
+
+        // Initial greeting
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const greeting = randomChoice(knowledgeBase.responses.greeting);
+                displayMessage(greeting, 'bot');
+                lastBotResponse = greeting;
+                speak(greeting);
+            }, 1000);
         });
     </script>
 </body>
