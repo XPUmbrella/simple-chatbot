@@ -3,33 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Chatbot</title>
+    <title>Ultimate Chatbot Assistant</title>
     <style>
         :root {
-            --primary-color: #4285f4;
-            --secondary-color: #34a853;
+            --primary: #4361ee;
+            --danger: #f72585;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --info: #4895ef;
+            --background: #f8f9fa;
+            --text: #212529;
             --bot-color: #f1f1f1;
             --user-color: #e3f2fd;
-            --text-color: #333;
             --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f9f9f9;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
         }
-        
+
         h1 {
-            color: var(--primary-color);
+            color: var(--primary);
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
+            font-weight: 700;
         }
-        
+
+        .subtitle {
+            text-align: center;
+            color: #6c757d;
+            margin-bottom: 25px;
+            font-size: 1em;
+        }
+
+        /* Chat Container */
         .chat-container {
             background-color: white;
             border-radius: 10px;
@@ -39,74 +52,408 @@
             display: flex;
             flex-direction: column;
         }
-        
+
         .chat-header {
-            background-color: var(--primary-color);
+            background-color: var(--primary);
             color: white;
             padding: 15px;
             text-align: center;
             font-weight: bold;
+            font-size: 1.2em;
         }
-        
-        .chat-messages {
+
+        .chat-box {
             flex: 1;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
+            background-color: #fafafa;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-        
+
         .message {
-            max-width: 80%;
-            padding: 10px 15px;
+            padding: 12px 16px;
             border-radius: 18px;
+            margin: 12px 0;
+            max-width: 85%;
             word-wrap: break-word;
+            box-shadow: var(--shadow);
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+            opacity: 0.95;
         }
-        
-        .bot-message {
-            align-self: flex-start;
-            background-color: var(--bot-color);
-            border-bottom-left-radius: 5px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 0.95; transform: translateY(0); }
         }
-        
+
         .user-message {
-            align-self: flex-end;
-            background-color: var(--user-color);
-            border-bottom-right-radius: 5px;
+            background: var(--primary);
+            color: white;
+            margin-left: auto;
+            border-radius: 18px 18px 0 18px;
         }
-        
-        .chat-input {
+
+        .bot-message {
+            background: var(--bot-color);
+            border-radius: 18px 18px 18px 0;
+        }
+
+        .system-message {
+            background: #f8f9fa;
+            margin: 12px auto;
+            max-width: 90%;
+            text-align: center;
+            font-style: italic;
+            color: #6c757d;
+            border-left: 4px solid var(--info);
+            font-size: 0.9em;
+        }
+
+        /* Input Area */
+        .input-area {
             display: flex;
             padding: 15px;
-            background-color: #f5f5f5;
-            border-top: 1px solid #ddd;
+            background-color: white;
+            border-top: 1px solid #eee;
+            gap: 12px;
         }
-        
-        #user-input {
+
+        #userInput {
             flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
-            outline: none;
+            padding: 14px 18px;
+            border: 1px solid #ced4da;
+            border-radius: 24px;
             font-size: 16px;
+            background: white;
+            transition: all 0.2s;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
-        
-        #send-btn {
-            background-color: var(--primary-color);
+
+        #userInput:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        button {
+            padding: 14px 22px;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 25px;
-            padding: 10px 20px;
-            margin-left: 10px;
+            border-radius: 24px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-size: 16px;
+            transition: all 0.2s;
+            font-weight: 500;
+            box-shadow: var(--shadow);
         }
-        
-        #send-btn:hover {
-            background-color: #3367d6;
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
-        
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow);
+        }
+
+        #sendButton {
+            margin-left: 0;
+        }
+
+        #micButton {
+            background: var(--danger);
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border-radius: 50%;
+        }
+
+        #micButton.listening {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(247, 37, 133, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1.1em;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        #addSpeechBtn {
+            background-color: var(--success);
+            color: white;
+        }
+
+        #addFunctionBtn {
+            background-color: var(--info);
+            color: white;
+        }
+
+        #showCommandsBtn {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        /* TTS Controls */
+        .tts-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tts-controls button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        #readBtn {
+            background-color: var(--success);
+            color: white;
+        }
+
+        #pauseBtn {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        #resumeBtn {
+            background-color: var(--info);
+            color: white;
+        }
+
+        #stopBtn {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Command Forms */
+        .command-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .command-form input, 
+        .command-form textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .command-form textarea {
+            min-height: 150px;
+            font-family: monospace;
+        }
+
+        .command-form button {
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Command List */
+        .command-list {
+            margin-top: 20px;
+        }
+
+        .command-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .command-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .command-item button {
+            padding: 5px 10px;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Toggle Switches */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 12px 0;
+            padding: 8px 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ced4da;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--success);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Command Ideas */
+        .command-idea {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--warning);
+        }
+
+        .idea-trigger {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        .idea-response {
+            color: #495057;
+            font-style: italic;
+            margin-bottom: 10px;
+            padding-left: 10px;
+            border-left: 2px solid #dee2e6;
+        }
+
+        /* Typing Indicator */
         .typing-indicator {
             display: none;
             align-self: flex-start;
@@ -115,7 +462,7 @@
             border-radius: 18px;
             margin-bottom: 5px;
         }
-        
+
         .typing-dot {
             display: inline-block;
             width: 8px;
@@ -125,29 +472,30 @@
             margin: 0 2px;
             animation: typingAnimation 1.4s infinite ease-in-out;
         }
-        
+
         .typing-dot:nth-child(1) {
             animation-delay: 0s;
         }
-        
+
         .typing-dot:nth-child(2) {
             animation-delay: 0.2s;
         }
-        
+
         .typing-dot:nth-child(3) {
             animation-delay: 0.4s;
         }
-        
+
         @keyframes typingAnimation {
             0%, 60%, 100% { transform: translateY(0); }
             30% { transform: translateY(-5px); }
         }
-        
+
+        /* Help Button */
         .help-btn {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background-color: var(--secondary-color);
+            background-color: var(--success);
             color: white;
             width: 50px;
             height: 50px;
@@ -159,40 +507,20 @@
             box-shadow: var(--shadow);
             font-weight: bold;
             font-size: 20px;
+            z-index: 10;
         }
-        
-        .help-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
+
+        /* Status */
+        #status {
+            height: 20px;
+            margin-top: 8px;
+            color: #6c757d;
+            font-size: 14px;
+            text-align: center;
+            font-style: italic;
         }
-        
-        .help-content {
-            background-color: white;
-            padding: 25px;
-            border-radius: 10px;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-        
+
+        /* Responsive */
         @media (max-width: 600px) {
             .chat-container {
                 height: 70vh;
@@ -201,18 +529,26 @@
             .message {
                 max-width: 90%;
             }
+            
+            .control-buttons {
+                flex-direction: column;
+            }
+            
+            .tts-controls {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Simple Chatbot</h1>
+    <h1>Ultimate Chatbot Assistant</h1>
+    <p class="subtitle">Speak naturally or type commands - I'm ready to help!</p>
     
     <div class="chat-container">
         <div class="chat-header">
             ChatBot Assistant
         </div>
-        
-        <div class="chat-messages" id="chat-messages">
+        <div class="chat-box" id="chatBox">
             <!-- Messages will appear here -->
         </div>
         
@@ -222,308 +558,686 @@
             <span class="typing-dot"></span>
         </div>
         
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
-            <button id="send-btn">Send</button>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message or say 'Hey Assistant'..." autocomplete="off" autofocus>
+            <button id="sendButton">Send</button>
+            <button id="micButton" title="Toggle microphone">🎤</button>
+        </div>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Voice Settings</div>
+        </div>
+        <div class="toggle-container">
+            <span>Enable Voice Responses</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="speechToggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="toggle-container">
+            <span>Only Speak for Commands</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="onlySpeakForCommands">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Command Center</div>
+        </div>
+        <div class="control-buttons">
+            <button id="addSpeechBtn">Add Speech Command</button>
+            <button id="addFunctionBtn">Add Function Command</button>
+            <button id="showCommandsBtn">View Commands</button>
+        </div>
+        <div class="tts-controls">
+            <button id="readBtn">🔊 Read Last</button>
+            <button id="pauseBtn" disabled>⏸ Pause</button>
+            <button id="resumeBtn" disabled>▶ Resume</button>
+            <button id="stopBtn" disabled>⏹ Stop</button>
+        </div>
+    </div>
+    
+    <div id="commandModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+    
+    <div id="ideasPanel" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Command Ideas</h2>
+            <div class="command-idea">
+                <div class="idea-trigger">"weather, what's the weather"</div>
+                <div class="idea-response">"Currently sunny and 72°F in your area"</div>
+                <button onclick="useIdea('weather, what\'s the weather', 'Currently sunny and 72°F in your area', 'Provides weather information')">Use This</button>
+            </div>
+            <div class="command-idea">
+                <div class="idea-trigger">"joke, tell me a joke"</div>
+                <div class="idea-response">"Why don't scientists trust atoms? Because they make up everything!"</div>
+                <button onclick="useIdea('joke, tell me a joke', 'Why don\'t scientists trust atoms? Because they make up everything!', 'Tells a funny joke')">Use This</button>
+            </div>
+            <div class="command-idea">
+                <div class="idea-trigger">"remind me to [task], remember [task]"</div>
+                <div class="idea-response">"I'll remind you to [task] later"</div>
+                <button onclick="useIdea('remind me to, remember', 'I\'ll remind you to [task] later', 'Sets reminders')">Use This</button>
+            </div>
+            <div class="command-idea">
+                <div class="idea-trigger">"calculate [equation], what's [equation]"</div>
+                <div class="idea-response">"The answer to [equation] is [result]"</div>
+                <button onclick="useIdea('calculate, what\'s', 'The answer to [equation] is [result]', 'Does simple math calculations')">Use This</button>
+            </div>
         </div>
     </div>
     
     <div class="help-btn" id="help-btn">?</div>
-    
-    <div class="help-modal" id="help-modal">
-        <div class="help-content">
-            <span class="close-btn" id="close-help">&times;</span>
-            <h2>ChatBot Help</h2>
-            <p>Here are the commands you can use:</p>
-            
-            <h3>Basic Commands:</h3>
-            <ul>
-                <li><strong>hello/hi/hey</strong> - Greet the chatbot</li>
-                <li><strong>time</strong> - Get current time</li>
-                <li><strong>date</strong> - Get current date</li>
-                <li><strong>joke</strong> - Hear a random joke</li>
-                <li><strong>weather [location]</strong> - Get weather information (simulated)</li>
-                <li><strong>calculate [expression]</strong> - Do simple math (e.g., 'calculate 2+2')</li>
-            </ul>
-            
-            <h3>Memory Commands:</h3>
-            <ul>
-                <li><strong>remember [key] [value]</strong> - Store information</li>
-                <li><strong>recall [key]</strong> - Recall stored information</li>
-                <li><strong>clear</strong> - Clear all stored information</li>
-            </ul>
-            
-            <h3>Other Commands:</h3>
-            <ul>
-                <li><strong>help</strong> - Show this help message</li>
-                <li><strong>about</strong> - Learn about this chatbot</li>
-                <li><strong>quit/exit</strong> - End the conversation</li>
-            </ul>
-        </div>
-    </div>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const chatMessages = document.getElementById('chat-messages');
-            const userInput = document.getElementById('user-input');
-            const sendBtn = document.getElementById('send-btn');
-            const typingIndicator = document.getElementById('typing-indicator');
-            const helpBtn = document.getElementById('help-btn');
-            const helpModal = document.getElementById('help-modal');
-            const closeHelp = document.getElementById('close-help');
-            
-            let userName = "User";
-            let memory = JSON.parse(localStorage.getItem('chatbotMemory')) || {
-                facts: {},
-                sessions: 0
-            };
-            
-            // Initialize with a greeting if it's a new session
-            if (!memory.sessions) {
-                addBotMessage("Hello! I'm your simple chatbot. Type 'help' to see what I can do.");
+        // ======================
+        // CORE SETUP
+        // ======================
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        const synth = window.speechSynthesis;
+        let currentUtterance = null;
+        let isListening = false;
+        let lastBotResponse = "";
+        let lastSpeechTime = 0;
+        const speechDelay = 2000; // 2 seconds between speeches
+
+        // DOM elements
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const micButton = document.getElementById('micButton');
+        const statusElement = document.getElementById('status');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const helpBtn = document.getElementById('help-btn');
+        const modal = document.getElementById('commandModal');
+        const modalBody = document.getElementById('modalBody');
+        const closeBtn = document.querySelector(".close");
+        const ideasPanel = document.getElementById('ideasPanel');
+
+        // Load commands from localStorage
+        let customCommands = JSON.parse(localStorage.getItem('customCommands')) || [
+            {
+                type: "speech",
+                triggers: ["hello", "hi", "hey"],
+                response: "Hello there! How can I help you today?",
+                description: "Basic greeting response"
+            },
+            {
+                type: "function",
+                triggers: ["time", "what time is it"],
+                action: function() {
+                    const now = new Date();
+                    addMessage("bot", `The current time is ${now.toLocaleTimeString()}`);
+                },
+                description: "Tells the current time",
+                name: "Time Command"
+            },
+            {
+                type: "function",
+                triggers: ["date", "what's today's date"],
+                action: function() {
+                    const now = new Date();
+                    addMessage("bot", `Today is ${now.toLocaleDateString()}`);
+                },
+                description: "Tells today's date",
+                name: "Date Command"
+            },
+            {
+                type: "speech",
+                triggers: ["joke", "tell me a joke"],
+                response: "Why don't scientists trust atoms? Because they make up everything!",
+                description: "Tells a random joke"
+            },
+            {
+                type: "function",
+                triggers: ["help", "commands"],
+                action: function() {
+                    showAvailableCommands();
+                },
+                description: "Shows available commands",
+                name: "Help Command"
+            },
+            {
+                type: "function",
+                triggers: ["clear", "clear chat"],
+                action: function() {
+                    clearChat();
+                },
+                description: "Clears the chat history",
+                name: "Clear Command"
             }
-            memory.sessions++;
-            saveMemory();
-            
-            // Focus input field on load
-            userInput.focus();
-            
-            // Send message when button is clicked
-            sendBtn.addEventListener('click', sendMessage);
-            
-            // Send message when Enter is pressed
+        ];
+
+        // ======================
+        // INITIALIZATION
+        // ======================
+        function init() {
+            // Event Listeners
+            sendButton.addEventListener('click', sendMessage);
             userInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // Command buttons
+            document.getElementById("addSpeechBtn").addEventListener("click", () => openModal("speech"));
+            document.getElementById("addFunctionBtn").addEventListener("click", () => openModal("function"));
+            document.getElementById("showCommandsBtn").addEventListener("click", showCommands);
+
+            // TTS controls
+            document.getElementById("readBtn").addEventListener("click", readLastMessage);
+            document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
+            document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
+            document.getElementById("stopBtn").addEventListener("click", stopSpeech);
+
+            // Modal controls
+            closeBtn.addEventListener("click", () => modal.style.display = "none");
+            document.querySelectorAll('#ideasPanel .close').forEach(btn => {
+                btn.addEventListener("click", () => ideasPanel.style.display = "none");
+            });
+            window.addEventListener("click", (event) => {
+                if (event.target === modal) modal.style.display = "none";
+                if (event.target === ideasPanel) ideasPanel.style.display = "none";
+            });
+
+            // Help button
+            helpBtn.addEventListener('click', showHelp);
+
+            // Voice recognition
+            micButton.addEventListener('click', toggleSpeechRecognition);
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+                sendMessage();
+            };
+            recognition.onerror = (event) => {
+                statusElement.textContent = `Error: ${event.error}`;
+                micButton.classList.remove('listening');
+                isListening = false;
+            };
+            recognition.onend = () => {
+                if (isListening) recognition.start();
+                else {
+                    micButton.classList.remove('listening');
+                    statusElement.textContent = "";
                 }
-            });
+            };
+
+            // Add welcome message
+            setTimeout(() => {
+                addMessage("bot", "Hello! I'm your enhanced chatbot. Try saying 'hello' or ask 'what time is it?'");
+            }, 500);
+        }
+
+        // ======================
+        // MESSAGE FUNCTIONS
+        // ======================
+        function addMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', `${sender}-message`);
             
-            // Help button functionality
-            helpBtn.addEventListener('click', function() {
-                helpModal.style.display = 'flex';
-            });
-            
-            closeHelp.addEventListener('click', function() {
-                helpModal.style.display = 'none';
-            });
-            
-            // Close modal when clicking outside
-            window.addEventListener('click', function(e) {
-                if (e.target === helpModal) {
-                    helpModal.style.display = 'none';
-                }
-            });
-            
-            function sendMessage() {
-                const message = userInput.value.trim();
-                if (message === '') return;
-                
-                // Add user message to chat
-                addUserMessage(message);
-                userInput.value = '';
-                
-                // Show typing indicator
-                typingIndicator.style.display = 'flex';
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                
-                // Process after a short delay to simulate thinking
-                setTimeout(() => {
-                    typingIndicator.style.display = 'none';
-                    const response = processCommand(message);
-                    addBotMessage(response);
-                    
-                    // Check if it's time to quit
-                    if (message.toLowerCase() === 'quit' || message.toLowerCase() === 'exit') {
-                        userInput.disabled = true;
-                        sendBtn.disabled = true;
-                    }
-                }, 1000 + Math.random() * 1000);
-            }
-            
-            function addUserMessage(message) {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('message', 'user-message');
+            if (sender === 'user') {
                 messageElement.textContent = message;
-                chatMessages.appendChild(messageElement);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } else if (sender === 'system') {
+                messageElement.textContent = `System: ${message}`;
+                messageElement.classList.add('system-message');
+            } else if (sender === 'bot') {
+                messageElement.textContent = `Assistant: ${message}`;
             }
             
-            function addBotMessage(message) {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('message', 'bot-message');
-                messageElement.textContent = message;
-                chatMessages.appendChild(messageElement);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
             
-            function processCommand(userInput) {
-                if (!userInput.trim()) {
-                    return "Please say something or type 'help' for options.";
+            // Store last bot response for TTS
+            if (sender === 'bot') {
+                lastBotResponse = message;
+            }
+        }
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            addMessage("user", message);
+            userInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // Process after a short delay to simulate thinking
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                if (!checkForCustomCommand(message)) {
+                    const response = generateResponse(message);
+                    respondToQuery(response);
                 }
-                
-                // Split input into command and arguments
-                const parts = userInput.toLowerCase().split(' ');
-                const command = parts[0];
-                const args = parts.slice(1);
-                
-                // Check for known commands
-                if (command === 'hello' || command === 'hi' || command === 'hey') {
-                    return respondToGreeting();
-                } else if (command === 'time') {
-                    return tellTime();
-                } else if (command === 'date') {
-                    return tellDate();
-                } else if (command === 'joke') {
-                    return tellJoke();
-                } else if (command === 'help') {
-                    return showHelp();
-                } else if (command === 'remember') {
-                    if (args.length < 2) {
-                        return "Please provide both a key and value to remember.";
-                    }
-                    const key = args[0];
-                    const value = args.slice(1).join(' ');
-                    return rememberInfo(key, value);
-                } else if (command === 'recall') {
-                    if (!args.length) {
-                        return "Please specify what you want me to recall.";
-                    }
-                    return recallInfo(args.join(' '));
-                } else if (command === 'clear') {
-                    return clearMemory();
-                } else if (command === 'quit' || command === 'exit') {
-                    return quitChat();
-                } else if (command === 'weather') {
-                    return weatherInfo(args.join(' '));
-                } else if (command === 'calculate') {
-                    if (!args.length) {
-                        return "Please provide an expression to calculate.";
-                    }
-                    return calculate(args.join(' '));
-                } else if (command === 'about') {
-                    return aboutInfo();
-                }
-                
-                // If no command matched, provide a default response
-                const defaultResponses = [
-                    "I'm not sure what you mean. Type 'help' to see what I can do.",
-                    `Sorry, I don't understand '${userInput}'. Try asking for 'help'.`,
-                    "Interesting... but I'm not programmed to respond to that. Need 'help'?",
-                    "Could you rephrase that? Type 'help' for available commands."
-                ];
-                return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+            }, 1000 + Math.random() * 1000);
+        }
+
+        function generateResponse(message) {
+            const lowerMsg = message.toLowerCase();
+            
+            if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
+                return randomChoice([
+                    "Hello there! What can I do for you today?",
+                    "Hi! I'm ready to help. Try asking about the time or date.",
+                    "Greetings! You can teach me new commands using the 'Add Command' button."
+                ]);
             }
             
-            function respondToGreeting() {
-                const greetings = [
-                    `Hello ${userName}! How can I help you today?`,
-                    `Hi there ${userName}! What's on your mind?`,
-                    `Hey ${userName}! Nice to see you again!`,
-                    `Greetings ${userName}! How can I assist you?`
-                ];
-                return greetings[Math.floor(Math.random() * greetings.length)];
+            if (lowerMsg.includes('bye') || lowerMsg.includes('goodbye')) {
+                return randomChoice([
+                    "Goodbye! Your custom commands will be here when you return.",
+                    "See you later! Don't forget you can add more commands anytime.",
+                    "Farewell! I'm always learning, so teach me more when you come back."
+                ]);
             }
             
-            function tellTime() {
-                const now = new Date();
-                return `The current time is ${now.toLocaleTimeString()}`;
+            if (lowerMsg.includes('weather')) {
+                return weatherInfo(lowerMsg.replace('weather', '').trim());
             }
             
-            function tellDate() {
-                const now = new Date();
-                return `Today's date is ${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-            }
-            
-            function tellJoke() {
-                const jokes = [
-                    "Why don't scientists trust atoms? Because they make up everything!",
-                    "Why did the scarecrow win an award? Because he was outstanding in his field!",
-                    "I told my wife she was drawing her eyebrows too high. She looked surprised.",
-                    "What do you call a fake noodle? An impasta!",
-                    "How do you organize a space party? You planet!"
-                ];
-                return jokes[Math.floor(Math.random() * jokes.length)];
-            }
-            
-            function showHelp() {
-                helpModal.style.display = 'flex';
-                return "I've opened the help menu for you!";
-            }
-            
-            function rememberInfo(key, value) {
-                memory.facts[key.toLowerCase()] = value;
-                saveMemory();
-                return `I've remembered '${key}' for you.`;
-            }
-            
-            function recallInfo(key) {
-                key = key.toLowerCase();
-                if (key in memory.facts) {
-                    return `You told me that '${key}' is: ${memory.facts[key]}`;
-                } else {
-                    return `I don't remember anything about '${key}'.`;
-                }
-            }
-            
-            function clearMemory() {
-                memory.facts = {};
-                saveMemory();
-                return "I've cleared all my memories.";
-            }
-            
-            function quitChat() {
-                return "Goodbye! Have a great day!";
-            }
-            
-            function weatherInfo(location = "") {
-                if (!location) {
-                    location = "your area";
-                }
-                
-                const weatherTypes = ["sunny", "rainy", "cloudy", "windy", "snowy"];
-                const temps = Math.floor(Math.random() * 41) - 5; // -5 to 35
-                return `The weather in ${location} is ${weatherTypes[Math.floor(Math.random() * weatherTypes.length)]} with a temperature of ${temps}°C.`;
-            }
-            
-            function calculate(expression) {
+            if (lowerMsg.includes('calculate') || lowerMsg.includes('what is') || lowerMsg.includes('what\'s')) {
                 try {
-                    // Security note: In a real application, you'd want to sanitize the input
-                    // This is a simple example - don't use eval() in production without proper sanitization
-                    const result = eval(expression.replace(/[^-()\d/*+.]/g, ''));
-                    return `The result of ${expression} is ${result}`;
+                    const expr = lowerMsg.replace('calculate', '').replace('what is', '').replace('what\'s', '').trim();
+                    const result = eval(expr.replace(/[^-()\d/*+.]/g, ''));
+                    return `The result of ${expr} is ${result}`;
                 } catch {
                     return "Sorry, I couldn't calculate that. Please check your expression.";
                 }
             }
             
-            function aboutInfo() {
-                return `
-                About ChatBot:
-                --------------------------
-                Version: 1.2
-                Features: Simple chatbot with enhanced command system
-                Memory: Can remember facts between sessions
-                Sessions: ${memory.sessions} chats so far
-                --------------------------
+            return randomChoice([
+                "I'm not sure how to respond to that. You can teach me by adding a custom command!",
+                "Interesting! You can create a custom response for that using the 'Add Command' button.",
+                "I'm still learning. Would you like to teach me how to respond to that?"
+            ]);
+        }
+
+        function weatherInfo(location = "") {
+            if (!location) {
+                location = "your area";
+            }
+            
+            const weatherTypes = ["sunny", "rainy", "cloudy", "windy", "snowy"];
+            const temps = Math.floor(Math.random() * 41) - 5; // -5 to 35
+            return `The weather in ${location} is ${weatherTypes[Math.floor(Math.random() * weatherTypes.length)]} with a temperature of ${temps}°C.`;
+        }
+
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function respondToQuery(response, isSystemMessage = false) {
+            addMessage(isSystemMessage ? 'system' : 'bot', response);
+            
+            if (!isSystemMessage && shouldSpeak()) {
+                speak(response);
+            }
+        }
+
+        function shouldSpeak() {
+            return document.getElementById('speechToggle').checked &&
+                   (!document.getElementById('onlySpeakForCommands').checked || 
+                    lastBotResponse.includes("Recognized command:"));
+        }
+
+        function clearChat() {
+            chatBox.innerHTML = '';
+            respondToQuery("Chat history cleared. How can I help you now?");
+        }
+
+        // ======================
+        // COMMAND SYSTEM
+        // ======================
+        function checkForCustomCommand(message, isSystemMessage = false) {
+            if (isSystemMessage || !message.trim()) return false;
+            
+            const lowerMsg = message.toLowerCase();
+            if (lowerMsg.startsWith("assistant:")) return false;
+            
+            for (const command of customCommands) {
+                for (const trigger of command.triggers) {
+                    if (lowerMsg.includes(trigger.toLowerCase())) {
+                        displayMessage(`Recognized command: "${trigger}"`, 'system');
+                        try {
+                            if (command.type === "speech") {
+                                respondToQuery(command.response);
+                            } else if (command.type === "function") {
+                                command.action();
+                            }
+                            return true;
+                        } catch (e) {
+                            console.error("Command error:", e);
+                            respondToQuery("Hmm, I had trouble with that command. Let's try something else.", true);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function showAvailableCommands() {
+            updateCommandsList();
+            modalBody.innerHTML = `
+                <h2>Command List (${customCommands.length})</h2>
+                <input type="text" id="commandFilter" placeholder="Filter commands..." style="width:100%;padding:8px;margin-bottom:15px;">
+                <div class="command-list" id="commandList">
+                    ${customCommands.map((cmd, i) => `
+                        <div class="command-item">
+                            <h3>${cmd.name || cmd.type.toUpperCase()} Command</h3>
+                            <p><strong>Type:</strong> ${cmd.type}</p>
+                            <p><strong>Triggers:</strong> ${cmd.triggers.join(', ')}</p>
+                            <p><strong>Description:</strong> ${cmd.description || 'No description'}</p>
+                            ${cmd.type === 'speech' ? `<p><strong>Response:</strong> ${cmd.response.length > 50 ? cmd.response.substring(0, 50) + '...' : cmd.response}</p>` : ''}
+                            <button onclick="deleteCommand(${i})">Delete</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Add filtering functionality
+            document.getElementById("commandFilter").addEventListener("input", function() {
+                const filter = this.value.toLowerCase();
+                document.querySelectorAll(".command-item").forEach(item => {
+                    item.style.display = item.textContent.toLowerCase().includes(filter) ? "block" : "none";
+                });
+            });
+            
+            modal.style.display = "block";
+        }
+
+        function openModal(type) {
+            modalBody.innerHTML = "";
+            
+            if (type === "speech") {
+                modalBody.innerHTML = `
+                    <h2>Add Speech Command</h2>
+                    <div class="command-form">
+                        <label for="triggers">Trigger Phrases (comma separated):</label>
+                        <input type="text" id="triggers" placeholder="hello,hi,hey">
+                        
+                        <label for="response">Response Text:</label>
+                        <textarea id="response" placeholder="Enter the response text here..."></textarea>
+                        
+                        <label for="commandDesc">Description:</label>
+                        <input type="text" id="commandDesc" placeholder="Brief description of this command">
+                        
+                        <button onclick="addCommand('speech')">Add Command</button>
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <h2>Add Function Command</h2>
+                    <div class="command-form">
+                        <label for="funcTriggers">Trigger Phrases (comma separated):</label>
+                        <input type="text" id="funcTriggers" placeholder="time,what time is it">
+                        
+                        <label for="funcName">Command Name (optional):</label>
+                        <input type="text" id="funcName" placeholder="Time Command">
+                        
+                        <label for="commandDesc">Description:</label>
+                        <input type="text" id="commandDesc" placeholder="Brief description of this command">
+                        
+                        <label for="funcCode">Function Code:</label>
+                        <textarea id="funcCode">function execute() {
+    // Available variables:
+    // addMessage(sender, message)
+    // chatBox (DOM element)
+    
+    // Example:
+    const now = new Date();
+    addMessage('bot', 'Current time: ' + now.toLocaleTimeString());
+}</textarea>
+                        
+                        <button onclick="addCommand('function')">Add Command</button>
+                    </div>
                 `;
             }
             
-            function saveMemory() {
-                localStorage.setItem('chatbotMemory', JSON.stringify(memory));
+            modal.style.display = "block";
+        }
+
+        function addCommand(type) {
+            try {
+                const description = document.getElementById('commandDesc').value.trim();
+                
+                if (type === "speech") {
+                    const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
+                    const response = document.getElementById("response").value;
+                    
+                    if (!triggers.length || !response || !description) {
+                        alert("Please fill in all required fields");
+                        return;
+                    }
+                    
+                    customCommands.push({
+                        type: "speech",
+                        triggers: triggers,
+                        response: response,
+                        description: description
+                    });
+                } else {
+                    const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
+                    const funcName = document.getElementById("funcName").value.trim();
+                    const funcCode = document.getElementById("funcCode").value;
+                    
+                    if (!triggers.length || !funcCode || !description) {
+                        alert("Please fill in all required fields");
+                        return;
+                    }
+                    
+                    // Create the function safely
+                    const func = new Function(`${funcCode}\nreturn execute;`)();
+                    
+                    customCommands.push({
+                        type: "function",
+                        triggers: triggers,
+                        action: func,
+                        name: funcName || "Unnamed Function",
+                        description: description
+                    });
+                }
+                
+                saveCommandsToStorage();
+                modal.style.display = "none";
+                respondToQuery("Command added successfully!", true);
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+                console.error("Command creation error:", e);
+            }
+        }
+
+        function deleteCommand(index) {
+            if (confirm(`Delete the command "${customCommands[index].triggers[0]}"?`)) {
+                customCommands.splice(index, 1);
+                saveCommandsToStorage();
+                showAvailableCommands();
+                respondToQuery("Command deleted successfully.", true);
+            }
+        }
+
+        function saveCommandsToStorage() {
+            localStorage.setItem('customCommands', JSON.stringify(customCommands));
+        }
+
+        function useIdea(triggers, response, description) {
+            document.getElementById('triggers').value = triggers;
+            document.getElementById('response').value = response;
+            document.getElementById('commandDesc').value = description;
+            ideasPanel.style.display = 'none';
+            modal.style.display = 'block';
+        }
+
+        // ======================
+        // TTS FUNCTIONS
+        // ======================
+        function readLastMessage() {
+            stopSpeech();
+            
+            if (lastBotResponse) {
+                currentUtterance = new SpeechSynthesisUtterance(lastBotResponse);
+                
+                currentUtterance.onend = function() {
+                    currentUtterance = null;
+                    updateTtsControls();
+                };
+                
+                synth.speak(currentUtterance);
+                updateTtsControls();
+            }
+        }
+
+        function pauseSpeech() {
+            if (synth.speaking) {
+                synth.pause();
+                updateTtsControls();
+            }
+        }
+
+        function resumeSpeech() {
+            if (synth.paused) {
+                synth.resume();
+                updateTtsControls();
+            }
+        }
+
+        function stopSpeech() {
+            synth.cancel();
+            currentUtterance = null;
+            updateTtsControls();
+        }
+
+        function speak(text) {
+            const now = Date.now();
+            if (now - lastSpeechTime < speechDelay) return;
+            lastSpeechTime = now;
+            
+            if (synth.speaking) synth.cancel();
+            
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.voice = getPreferredVoice();
+            currentUtterance.pitch = 1;
+            currentUtterance.rate = 1;
+            
+            synth.speak(currentUtterance);
+            updateTtsControls();
+        }
+
+        function getPreferredVoice() {
+            const voices = synth.getVoices();
+            const preferredVoices = [
+                'Google UK English Female',
+                'Microsoft Zira - English (United States)',
+                'Samantha'
+            ];
+            
+            for (const voiceName of preferredVoices) {
+                const voice = voices.find(v => v.name === voiceName);
+                if (voice) return voice;
             }
             
-            // Ask for user's name if it's the first message
-            if (memory.sessions === 1) {
-                addBotMessage("Hello! What's your name?");
-                const originalProcessCommand = processCommand;
-                processCommand = function(userInput) {
-                    userName = userInput.trim() || "User";
-                    addBotMessage(`Nice to meet you, ${userName}! How can I help you today?`);
-                    processCommand = originalProcessCommand;
-                    return "";
-                };
+            return voices.find(v => v.lang.includes('en')) || voices[0];
+        }
+
+        function updateTtsControls() {
+            const isSpeaking = synth.speaking;
+            const isPaused = synth.paused;
+            
+            document.getElementById("pauseBtn").disabled = !isSpeaking || isPaused;
+            document.getElementById("resumeBtn").disabled = !isPaused;
+            document.getElementById("stopBtn").disabled = !isSpeaking;
+        }
+
+        // ======================
+        // HELP FUNCTIONS
+        // ======================
+        function showHelp() {
+            modalBody.innerHTML = `
+                <h2>ChatBot Help</h2>
+                <p>Here are the commands you can use:</p>
+                
+                <h3>Basic Commands:</h3>
+                <ul>
+                    <li><strong>hello/hi/hey</strong> - Greet the chatbot</li>
+                    <li><strong>time</strong> - Get current time</li>
+                    <li><strong>date</strong> - Get current date</li>
+                    <li><strong>joke</strong> - Hear a random joke</li>
+                    <li><strong>weather [location]</strong> - Get weather information (simulated)</li>
+                    <li><strong>calculate [expression]</strong> - Do simple math (e.g., 'calculate 2+2')</li>
+                </ul>
+                
+                <h3>Memory Commands:</h3>
+                <ul>
+                    <li><strong>remember [key] [value]</strong> - Store information</li>
+                    <li><strong>recall [key]</strong> - Recall stored information</li>
+                    <li><strong>clear</strong> - Clear all stored information</li>
+                </ul>
+                
+                <h3>Other Commands:</h3>
+                <ul>
+                    <li><strong>help</strong> - Show this help message</li>
+                    <li><strong>about</strong> - Learn about this chatbot</li>
+                    <li><strong>quit/exit</strong> - End the conversation</li>
+                </ul>
+                
+                <h3>Voice Controls:</h3>
+                <ul>
+                    <li><strong>🔊 Read Last</strong> - Read the last bot response</li>
+                    <li><strong>⏸ Pause</strong> - Pause current speech</li>
+                    <li><strong>▶ Resume</strong> - Resume paused speech</li>
+                    <li><strong>⏹ Stop</strong> - Stop all speech</li>
+                </ul>
+                
+                <h3>Custom Commands:</h3>
+                <p>You can add your own custom commands using the "Add Command" buttons in the control panel.</p>
+            `;
+            modal.style.display = 'block';
+        }
+
+        function toggleSpeechRecognition() {
+            if (isListening) {
+                recognition.stop();
+                micButton.classList.remove('listening');
+                statusElement.textContent = "";
+                isListening = false;
+            } else {
+                recognition.start();
+                micButton.classList.add('listening');
+                statusElement.textContent = "Listening... Speak now";
+                isListening = true;
             }
-        });
+        }
+
+        // Make functions available globally
+        window.addCommand = addCommand;
+        window.deleteCommand = deleteCommand;
+        window.useIdea = useIdea;
+
+        // Initialize the chatbot
+        document.addEventListener("DOMContentLoaded", init);
+
+        // Load voices when they become available
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = getPreferredVoice;
+        }
     </script>
 </body>
 </html>
