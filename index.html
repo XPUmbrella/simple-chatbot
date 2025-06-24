@@ -237,11 +237,40 @@
             text-align: center;
             font-style: italic;
         }
+        #addCommandPanel {
+            display: none;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        .add-command-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .add-command-form input,
+        .add-command-form textarea {
+            padding: 10px;
+            border: 1px solid #d8dee9;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .add-command-form textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>My Smart Voice Assistant</h1>
-    <p class="subtitle">Try saying "help" or "create new command"</p>
+    <p class="subtitle">Try saying "what time is it" or "what's today's date"</p>
     
     <div id="chatbox"></div>
     
@@ -273,12 +302,45 @@
         </div>
     </div>
     
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Command Management</div>
+        </div>
+        <button onclick="showAddCommandPanel()" style="width:100%;margin-bottom:10px">➕ Add New Command</button>
+        <button onclick="toggleCommandsPanel()" style="width:100%">📋 View My Commands</button>
+    </div>
+    
     <div class="control-panel" id="commandsPanel" style="display:none">
         <div class="panel-header">
             <div class="panel-title">My Commands</div>
             <button onclick="toggleCommandsPanel()" style="background:transparent;color:var(--primary);padding:0">Close</button>
         </div>
         <div id="commandsList"></div>
+    </div>
+
+    <div id="addCommandPanel">
+        <div class="panel-header">
+            <div class="panel-title">Add New Command</div>
+            <button onclick="hideAddCommandPanel()" style="background:transparent;color:var(--primary);padding:0">✕</button>
+        </div>
+        <div class="add-command-form">
+            <div>
+                <label>Trigger Phrases (comma separated):</label>
+                <input type="text" id="newCommandTriggers" placeholder="e.g., 'time, what time is it, current time'">
+            </div>
+            <div>
+                <label>Response:</label>
+                <textarea id="newCommandResponse" placeholder="What should I say when this command is triggered?"></textarea>
+            </div>
+            <div>
+                <label>Description (for help menu):</label>
+                <input type="text" id="newCommandDesc" placeholder="e.g., 'Tells the current time'">
+            </div>
+            <div class="form-actions">
+                <button onclick="hideAddCommandPanel()">Cancel</button>
+                <button onclick="saveNewCommand()" style="background-color:var(--success)">Save Command</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -303,6 +365,7 @@
         const statusElement = document.getElementById('status');
         const commandsPanel = document.getElementById('commandsPanel');
         const commandsList = document.getElementById('commandsList');
+        const addCommandPanel = document.getElementById('addCommandPanel');
 
         // Load commands from localStorage
         let customCommands = JSON.parse(localStorage.getItem('customCommands')) || [
@@ -327,9 +390,14 @@
                 description: "Repeat the last response"
             },
             {
-                triggers: ["create new command", "teach me", "add command"],
-                action: "startTeaching()",
-                description: "Create a new voice command"
+                triggers: ["time", "what time is it", "current time"],
+                action: "respondToQuery('The current time is ' + new Date().toLocaleTimeString())",
+                description: "Tells the current time"
+            },
+            {
+                triggers: ["date", "what's today's date", "current date"],
+                action: "respondToQuery('Today is ' + new Date().toLocaleDateString())",
+                description: "Tells today's date"
             }
         ];
 
@@ -340,7 +408,7 @@
             if (isSystemMessage || !message.trim()) return false;
             
             const lowerMsg = message.toLowerCase();
-            if (lowerMsg.startsWith("bot:")) return false;
+            if (lowerMsg.startsWith("assistant:")) return false;
             
             for (const command of customCommands) {
                 for (const trigger of command.triggers) {
@@ -352,11 +420,12 @@
                             } else if (typeof command.action === 'function') {
                                 command.action();
                             }
+                            return true;
                         } catch (e) {
                             console.error("Command error:", e);
                             respondToQuery("Sorry, I had trouble with that command.", true);
+                            return true;
                         }
-                        return true;
                     }
                 }
             }
@@ -372,6 +441,20 @@
         function toggleCommandsPanel() {
             commandsPanel.style.display = commandsPanel.style.display === 'none' ? 'block' : 'none';
             if (commandsPanel.style.display === 'block') updateCommandsList();
+        }
+
+        function showAddCommandPanel() {
+            addCommandPanel.style.display = 'block';
+            commandsPanel.style.display = 'none';
+            document.getElementById('newCommandTriggers').focus();
+        }
+
+        function hideAddCommandPanel() {
+            addCommandPanel.style.display = 'none';
+            // Clear the form
+            document.getElementById('newCommandTriggers').value = '';
+            document.getElementById('newCommandResponse').value = '';
+            document.getElementById('newCommandDesc').value = '';
         }
 
         function updateCommandsList() {
@@ -395,6 +478,30 @@
                 updateCommandsList();
                 respondToQuery("Command deleted.", true);
             }
+        }
+
+        function saveNewCommand() {
+            const triggers = document.getElementById('newCommandTriggers').value.trim();
+            const response = document.getElementById('newCommandResponse').value.trim();
+            const description = document.getElementById('newCommandDesc').value.trim();
+
+            if (!triggers || !response || !description) {
+                alert("Please fill in all fields");
+                return;
+            }
+
+            const triggerList = triggers.split(',').map(t => t.trim()).filter(t => t);
+            
+            customCommands.push({
+                triggers: triggerList,
+                action: `respondToQuery("${response.replace(/"/g, '\\"')}")`,
+                description: description
+            });
+
+            saveCommandsToStorage();
+            hideAddCommandPanel();
+            updateCommandsList();
+            respondToQuery(`New command "${triggerList[0]}" added successfully!`, true);
         }
 
         function saveCommandsToStorage() {
@@ -482,8 +589,8 @@
             }
             
             return randomChoice([
-                "I'm not sure how to respond to that. Try teaching me a new command!",
-                "That's interesting. You can create custom responses using the 'create new command' feature.",
+                "I'm not sure how to respond to that. You can teach me by adding a new command!",
+                "That's interesting. You can create custom responses using the 'Add New Command' button.",
                 "I'm always learning. You can teach me to respond to that by creating a new command."
             ]);
         }
@@ -578,7 +685,7 @@
 
         window.addEventListener('load', () => {
             setTimeout(() => {
-                respondToQuery("Hello! I'm your personal voice assistant. Say 'help' to see what I can do, or 'create new command' to teach me something new!");
+                respondToQuery("Hello! I'm your personal voice assistant. Try asking for the time or date, or say 'help' to see what I can do!");
             }, 800);
         });
     </script>
