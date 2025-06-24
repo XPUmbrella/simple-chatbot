@@ -1,71 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Smart Voice Command Chatbot</title>
+    <title>My Smart Voice Assistant</title>
     <style>
         :root {
-            --primary: #4285f4;
-            --danger: #ff4444;
-            --success: #34a853;
-            --warning: #ffbb33;
-            --info: #33b5e5;
+            --primary: #5e81ac;
+            --danger: #bf616a;
+            --success: #a3be8c;
+            --warning: #ebcb8b;
+            --info: #88c0d0;
+            --background: #eceff4;
+            --text: #2e3440;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
         }
         h1 {
             color: var(--primary);
             text-align: center;
             margin-bottom: 10px;
+            font-weight: 600;
         }
         .subtitle {
             text-align: center;
-            color: #666;
+            color: #4c566a;
             margin-bottom: 20px;
+            font-size: 0.95em;
         }
         #chatbox {
-            height: 300px;
-            border: 1px solid #ddd;
+            height: 350px;
+            border: 1px solid #d8dee9;
             padding: 15px;
             overflow-y: auto;
             margin-bottom: 15px;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .message {
-            padding: 10px 15px;
+            padding: 12px 16px;
             border-radius: 18px;
-            margin: 8px 0;
-            max-width: 80%;
+            margin: 10px 0;
+            max-width: 85%;
             word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .user-message {
-            background: #e3f2fd;
+            background: var(--primary);
+            color: white;
             margin-left: auto;
             border-radius: 18px 18px 0 18px;
         }
         .bot-message {
-            background: #f1f1f1;
+            background: #e5e9f0;
             border-radius: 18px 18px 18px 0;
         }
         .system-message {
-            background: #fff8e1;
-            margin: 8px auto;
+            background: #f8f9fa;
+            margin: 10px auto;
             max-width: 90%;
             text-align: center;
             font-style: italic;
-            color: #666;
-            border-left: 4px solid var(--warning);
-        }
-        .teaching-message {
-            background: #e8f5e9;
-            border-left: 4px solid var(--success);
+            color: #4c566a;
+            border-left: 4px solid var(--info);
+            font-size: 0.9em;
         }
         .input-group {
             display: flex;
@@ -74,10 +84,16 @@
         }
         #userInput {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
+            padding: 12px 16px;
+            border: 1px solid #d8dee9;
             border-radius: 20px;
             font-size: 16px;
+            background: white;
+            transition: border 0.2s;
+        }
+        #userInput:focus {
+            outline: none;
+            border-color: var(--primary);
         }
         button {
             padding: 12px 20px;
@@ -88,9 +104,14 @@
             cursor: pointer;
             font-size: 16px;
             transition: all 0.2s;
+            font-weight: 500;
         }
         button:hover {
             filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
         }
         #micButton {
             background: var(--danger);
@@ -99,6 +120,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 20px;
         }
         #micButton.listening {
             animation: pulse 1.5s infinite;
@@ -108,50 +130,34 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        #status {
-            height: 20px;
-            margin-top: 5px;
-            color: #666;
-            font-size: 14px;
-            text-align: center;
-        }
-        .voice-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            align-items: center;
-        }
-        .voice-btn {
-            background: var(--success);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .voice-btn:disabled {
-            background: #cccccc;
-        }
-        #commandsBtn {
-            background: var(--warning);
-            margin: 10px auto;
-            display: block;
-        }
-        .settings-panel {
+        .control-panel {
             background: white;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-top: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .panel-title {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
         }
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 50px;
+            height: 28px;
         }
         .toggle-switch input {
             opacity: 0;
@@ -165,15 +171,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
+            background-color: #d8dee9;
             transition: .4s;
             border-radius: 34px;
         }
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
+            height: 20px;
+            width: 20px;
             left: 4px;
             bottom: 4px;
             background-color: white;
@@ -184,41 +190,58 @@
             background-color: var(--success);
         }
         input:checked + .slider:before {
-            transform: translateX(26px);
+            transform: translateX(22px);
         }
         .command-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e9f0;
         }
         .command-item:last-child {
             border-bottom: none;
         }
+        .command-text {
+            flex: 1;
+        }
         .command-trigger {
-            font-weight: bold;
+            font-weight: 600;
             color: var(--primary);
         }
-        .command-action {
-            color: #666;
+        .command-desc {
+            color: #4c566a;
+            font-size: 0.9em;
+            margin-top: 2px;
         }
-        .delete-command {
-            color: var(--danger);
+        .command-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .command-btn {
+            background: none;
+            border: none;
             cursor: pointer;
-            margin-left: 10px;
+            color: #4c566a;
+            font-size: 18px;
+            padding: 5px;
         }
-        #teachingPanel {
-            display: none;
-            background: #e8f5e9;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
+        .command-btn:hover {
+            color: var(--primary);
+        }
+        #status {
+            height: 20px;
+            margin-top: 5px;
+            color: #4c566a;
+            font-size: 14px;
+            text-align: center;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
-    <h1>Smart Voice Command Chatbot</h1>
-    <p class="subtitle">Try saying "create new command" or "help"</p>
+    <h1>My Smart Voice Assistant</h1>
+    <p class="subtitle">Try saying "help" or "create new command"</p>
     
     <div id="chatbox"></div>
     
@@ -228,42 +251,35 @@
         <button id="micButton" onclick="toggleSpeechRecognition()">🎤</button>
     </div>
     
-    <div class="voice-controls">
-        <button class="voice-btn" id="speakBtn" onclick="speakLastResponse()">🔊</button>
-        <button class="voice-btn" id="stopSpeakBtn" onclick="stopSpeaking()">⏹️</button>
-        <label class="toggle-switch">
-            <input type="checkbox" id="speechToggle" checked>
-            <span class="slider"></span>
-        </label>
-        <span>Voice</span>
+    <div id="status"></div>
+    
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Voice Settings</div>
+        </div>
+        <div class="toggle-container">
+            <label class="toggle-switch">
+                <input type="checkbox" id="speechToggle" checked>
+                <span class="slider"></span>
+            </label>
+            <span>Enable Voice Responses</span>
+        </div>
+        <div class="toggle-container">
+            <label class="toggle-switch">
+                <input type="checkbox" id="onlySpeakForCommands">
+                <span class="slider"></span>
+            </label>
+            <span>Only Speak for Commands</span>
+        </div>
     </div>
     
-    <button id="commandsBtn" onclick="toggleCommandsPanel()">Show My Commands</button>
-    <div id="commandsPanel" class="settings-panel">
-        <h3>Your Custom Commands</h3>
+    <div class="control-panel" id="commandsPanel" style="display:none">
+        <div class="panel-header">
+            <div class="panel-title">My Commands</div>
+            <button onclick="toggleCommandsPanel()" style="background:transparent;color:var(--primary);padding:0">Close</button>
+        </div>
         <div id="commandsList"></div>
     </div>
-    
-    <div class="settings-panel">
-        <h3>Speech Settings</h3>
-        <p><label>
-            <input type="checkbox" id="onlySpeakForCommands">
-            Only speak for direct commands
-        </label></p>
-        <p><label>
-            <input type="checkbox" id="dontSpeakAutomatically">
-            Don't speak unless I click 🔊
-        </label></p>
-    </div>
-    
-    <div id="teachingPanel">
-        <h3>Teach Me a New Command</h3>
-        <p>Current Step: <span id="teachingStep">1</span>/3</p>
-        <div id="teachingContent"></div>
-        <button id="cancelTeaching" onclick="cancelTeaching()">Cancel</button>
-    </div>
-    
-    <p id="status"></p>
 
     <script>
         // ======================
@@ -279,26 +295,14 @@
         let currentUtterance = null;
         let isListening = false;
         let lastBotResponse = "";
-        let isTeaching = false;
-        let newCommand = {
-            triggers: [],
-            action: "",
-            description: ""
-        };
-        let teachingStep = 1;
         let lastSpeechTime = 0;
-        const speechDelay = 3000; // 3 seconds between speeches
+        const speechDelay = 2000; // 2 seconds between speeches
 
         // DOM elements
         const micButton = document.getElementById('micButton');
         const statusElement = document.getElementById('status');
-        const speakBtn = document.getElementById('speakBtn');
-        const stopSpeakBtn = document.getElementById('stopSpeakBtn');
         const commandsPanel = document.getElementById('commandsPanel');
         const commandsList = document.getElementById('commandsList');
-        const teachingPanel = document.getElementById('teachingPanel');
-        const teachingContent = document.getElementById('teachingContent');
-        const teachingStepDisplay = document.getElementById('teachingStep');
 
         // Load commands from localStorage
         let customCommands = JSON.parse(localStorage.getItem('customCommands')) || [
@@ -330,143 +334,58 @@
         ];
 
         // ======================
-        // COMMAND TEACHING SYSTEM
-        // ======================
-        function startTeaching() {
-            isTeaching = true;
-            teachingStep = 1;
-            newCommand = { triggers: [], action: "", description: "" };
-            updateTeachingPanel();
-            teachingPanel.style.display = 'block';
-            respondToQuery("Let's create a new command! What phrases should trigger this command? (Say or type them separated by commas)", true);
-        }
-
-        function updateTeachingPanel() {
-            teachingStepDisplay.textContent = teachingStep;
-            
-            switch(teachingStep) {
-                case 1:
-                    teachingContent.innerHTML = `
-                        <p>What words or phrases should activate this command?</p>
-                        <p><i>Example: "turn on lights", "lights on", "illuminate"</i></p>
-                        <input type="text" id="commandTriggers" placeholder="trigger phrases (comma separated)" style="width: 100%; padding: 8px; margin: 5px 0;">
-                        <button onclick="processTeachingStep()">Next</button>
-                    `;
-                    break;
-                case 2:
-                    teachingContent.innerHTML = `
-                        <p>What should I do when I hear this command?</p>
-                        <p><i>Example: "Turn on the living room lights"</i></p>
-                        <textarea id="commandAction" placeholder="What I should do..." style="width: 100%; padding: 8px; margin: 5px 0; height: 60px;"></textarea>
-                        <button onclick="processTeachingStep()">Next</button>
-                    `;
-                    break;
-                case 3:
-                    teachingContent.innerHTML = `
-                        <p>How should I describe this command in the help list?</p>
-                        <p><i>Example: "Turns on the living room lights"</i></p>
-                        <input type="text" id="commandDescription" placeholder="Command description" style="width: 100%; padding: 8px; margin: 5px 0;">
-                        <button onclick="saveNewCommand()">Save Command</button>
-                    `;
-                    break;
-            }
-        }
-
-        function processTeachingStep() {
-            switch(teachingStep) {
-                case 1:
-                    const triggersInput = document.getElementById('commandTriggers').value;
-                    if (!triggersInput.trim()) {
-                        alert("Please enter at least one trigger phrase");
-                        return;
-                    }
-                    newCommand.triggers = triggersInput.split(',').map(t => t.trim()).filter(t => t);
-                    teachingStep++;
-                    updateTeachingPanel();
-                    respondToQuery(`Got it! Now, what should I do when I hear "${newCommand.triggers[0]}"?`, true);
-                    break;
-                case 2:
-                    const actionInput = document.getElementById('commandAction').value;
-                    if (!actionInput.trim()) {
-                        alert("Please specify what I should do");
-                        return;
-                    }
-                    newCommand.action = actionInput;
-                    teachingStep++;
-                    updateTeachingPanel();
-                    respondToQuery("Great! Finally, how should I describe this command in the help list?", true);
-                    break;
-            }
-        }
-
-        function saveNewCommand() {
-            const descriptionInput = document.getElementById('commandDescription').value;
-            if (!descriptionInput.trim()) {
-                alert("Please enter a description");
-                return;
-            }
-            newCommand.description = descriptionInput;
-
-            // Create the command function dynamically
-            const actionFunction = `function() { respondToQuery("${newCommand.action.replace(/"/g, '\\"')}"); }`;
-            
-            customCommands.push({
-                triggers: newCommand.triggers,
-                action: actionFunction,
-                description: newCommand.description
-            });
-
-            saveCommandsToStorage();
-            endTeaching();
-            respondToQuery(`Command "${newCommand.triggers[0]}" saved successfully! Try saying it now.`, true);
-            updateCommandsList();
-        }
-
-        function cancelTeaching() {
-            endTeaching();
-            respondToQuery("Command creation cancelled.", true);
-        }
-
-        function endTeaching() {
-            isTeaching = false;
-            teachingPanel.style.display = 'none';
-        }
-
-        // ======================
-        // COMMAND MANAGEMENT
+        // COMMAND SYSTEM
         // ======================
         function checkForCustomCommand(message, isSystemMessage = false) {
-            // Skip command processing for system messages and empty messages
             if (isSystemMessage || !message.trim()) return false;
             
             const lowerMsg = message.toLowerCase();
-            
-            // Skip if the message is from the bot (to prevent self-triggering)
             if (lowerMsg.startsWith("bot:")) return false;
             
-            // Then check regular commands
             for (const command of customCommands) {
                 for (const trigger of command.triggers) {
                     if (lowerMsg.includes(trigger.toLowerCase())) {
-                        displayMessage(`Executing command: "${trigger}"`, 'system');
+                        displayMessage(`Executing: "${trigger}"`, 'system');
                         try {
-                            // For pre-defined functions
-                            if (typeof command.action === 'string' && command.action.endsWith(')')) {
+                            if (typeof command.action === 'string') {
                                 eval(command.action);
-                            } 
-                            // For dynamically created functions
-                            else if (typeof command.action === 'function') {
+                            } else if (typeof command.action === 'function') {
                                 command.action();
                             }
                         } catch (e) {
-                            console.error("Error executing command:", e);
-                            respondToQuery("Sorry, I had trouble executing that command.", true);
+                            console.error("Command error:", e);
+                            respondToQuery("Sorry, I had trouble with that command.", true);
                         }
                         return true;
                     }
                 }
             }
             return false;
+        }
+
+        function showAvailableCommands() {
+            updateCommandsList();
+            commandsPanel.style.display = 'block';
+            respondToQuery("Here are your available commands:", true);
+        }
+
+        function toggleCommandsPanel() {
+            commandsPanel.style.display = commandsPanel.style.display === 'none' ? 'block' : 'none';
+            if (commandsPanel.style.display === 'block') updateCommandsList();
+        }
+
+        function updateCommandsList() {
+            commandsList.innerHTML = customCommands.map((cmd, index) => `
+                <div class="command-item">
+                    <div class="command-text">
+                        <div class="command-trigger">${cmd.triggers[0]}</div>
+                        <div class="command-desc">${cmd.description}</div>
+                    </div>
+                    <div class="command-actions">
+                        <button class="command-btn" onclick="deleteCommand(${index})" title="Delete">✕</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function deleteCommand(index) {
@@ -480,36 +399,6 @@
 
         function saveCommandsToStorage() {
             localStorage.setItem('customCommands', JSON.stringify(customCommands));
-        }
-
-        function showAvailableCommands() {
-            const response = "Here's what you can say:\n" + 
-                customCommands.map(cmd => 
-                    `• "${cmd.triggers[0]}" - ${cmd.description}`
-                ).join('\n');
-            
-            respondToQuery(response);
-            updateCommandsList();
-            commandsPanel.style.display = 'block';
-        }
-
-        function updateCommandsList() {
-            commandsList.innerHTML = customCommands.map((cmd, index) => `
-                <div class="command-item">
-                    <div>
-                        <span class="command-trigger">${cmd.triggers[0]}</span>
-                        <span class="command-action">${cmd.description}</span>
-                    </div>
-                    ${index >= 5 ? `<span class="delete-command" onclick="deleteCommand(${index})">✕</span>` : ''}
-                </div>
-            `).join('');
-        }
-
-        function toggleCommandsPanel() {
-            commandsPanel.style.display = commandsPanel.style.display === 'block' ? 'none' : 'block';
-            document.getElementById('commandsBtn').textContent = 
-                commandsPanel.style.display === 'block' ? 'Hide My Commands' : 'Show My Commands';
-            if (commandsPanel.style.display === 'block') updateCommandsList();
         }
 
         function clearChat() {
@@ -578,24 +467,24 @@
             
             if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
                 return randomChoice([
-                    "Hello there! You can teach me new commands by saying 'create new command'",
-                    "Hi! Try creating your own voice commands - just say 'teach me'",
-                    "Greetings! I can learn new commands if you teach me."
+                    "Hello! How can I help you today?",
+                    "Hi there! What can I do for you?",
+                    "Greetings! I'm ready to assist."
                 ]);
             }
             
             if (lowerMsg.includes('bye') || lowerMsg.includes('goodbye')) {
                 return randomChoice([
-                    "Goodbye! Your custom commands will be saved for next time!",
-                    "See you later! Don't forget you can add more commands when you return.",
-                    "Farewell! Your personal commands are saved in your browser."
+                    "Goodbye! Have a wonderful day!",
+                    "See you later!",
+                    "Farewell! Come back anytime."
                 ]);
             }
             
             return randomChoice([
-                "I didn't understand that. Try teaching me a new command by saying 'create new command'",
-                "That's interesting! Did you know you can create custom commands for me?",
-                "I'm still learning. You can teach me to respond to that by creating a new command."
+                "I'm not sure how to respond to that. Try teaching me a new command!",
+                "That's interesting. You can create custom responses using the 'create new command' feature.",
+                "I'm always learning. You can teach me to respond to that by creating a new command."
             ]);
         }
 
@@ -603,16 +492,15 @@
             lastBotResponse = response;
             displayMessage(response, isSystemMessage ? 'system' : 'bot');
             
-            if (!isSystemMessage) {
-                const shouldSpeak = document.getElementById('speechToggle').checked &&
-                                  !document.getElementById('dontSpeakAutomatically').checked &&
-                                  (!document.getElementById('onlySpeakForCommands').checked || 
-                                   response.includes("Executing command:"));
-                
-                if (shouldSpeak) {
-                    speak(response);
-                }
+            if (!isSystemMessage && shouldSpeak()) {
+                speak(response);
             }
+        }
+
+        function shouldSpeak() {
+            return document.getElementById('speechToggle').checked &&
+                  (!document.getElementById('onlySpeakForCommands').checked || 
+                   lastBotResponse.includes("Executing:"));
         }
 
         function displayMessage(message, sender) {
@@ -621,11 +509,11 @@
             messageDiv.className = `message ${sender}-message`;
             
             if (sender === 'user') {
-                messageDiv.textContent = `You: ${message}`;
+                messageDiv.textContent = message;
             } else if (sender === 'system') {
                 messageDiv.textContent = `System: ${message}`;
             } else if (sender === 'bot') {
-                messageDiv.textContent = `Bot: ${message}`;
+                messageDiv.textContent = `Assistant: ${message}`;
             }
             
             chatbox.appendChild(messageDiv);
@@ -633,11 +521,8 @@
         }
 
         function speak(text) {
-            // Throttle speech frequency
             const now = Date.now();
-            if (now - lastSpeechTime < speechDelay) {
-                return;
-            }
+            if (now - lastSpeechTime < speechDelay) return;
             lastSpeechTime = now;
             
             if (synth.speaking) synth.cancel();
@@ -646,14 +531,6 @@
             currentUtterance.voice = getPreferredVoice();
             currentUtterance.pitch = 1;
             currentUtterance.rate = 1;
-            
-            speakBtn.disabled = true;
-            stopSpeakBtn.disabled = false;
-            
-            currentUtterance.onend = () => {
-                speakBtn.disabled = false;
-                stopSpeakBtn.disabled = true;
-            };
             
             synth.speak(currentUtterance);
         }
@@ -675,13 +552,13 @@
         }
 
         function speakLastResponse() {
-            if (lastBotResponse) speak(lastBotResponse);
+            if (lastBotResponse && document.getElementById('speechToggle').checked) {
+                speak(lastBotResponse);
+            }
         }
 
         function stopSpeaking() {
             synth.cancel();
-            speakBtn.disabled = false;
-            stopSpeakBtn.disabled = true;
         }
 
         function randomChoice(array) {
@@ -701,10 +578,8 @@
 
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const greeting = "Hello! I'm a chatbot that learns from you. Say 'create new command' to teach me something new, or 'help' to see existing commands.";
-                respondToQuery(greeting);
-                updateCommandsList();
-            }, 1000);
+                respondToQuery("Hello! I'm your personal voice assistant. Say 'help' to see what I can do, or 'create new command' to teach me something new!");
+            }, 800);
         });
     </script>
 </body>
