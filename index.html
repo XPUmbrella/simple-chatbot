@@ -1,15 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Simple Chatbot</title>
-  <link rel="stylesheet" href="style.css">
+    <title>Simple Chatbot</title>
+    <style>
+        #chatbox {
+            width: 400px;
+            height: 500px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        .user-message {
+            text-align: right;
+            margin: 5px;
+            padding: 5px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+        }
+        .bot-message {
+            text-align: left;
+            margin: 5px;
+            padding: 5px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div id="chat-box"></div>
-    <input type="text" id="user-input" placeholder="Type a message...">
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="Type your message here...">
     <button onclick="sendMessage()">Send</button>
-  </div>
-  <script src="script.js"></script>
+
+    <script>
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if(message === '') return;
+            
+            // Display user message
+            const chatbox = document.getElementById('chatbox');
+            chatbox.innerHTML += `<div class="user-message">You: ${message}</div>`;
+            
+            // Simple bot responses
+            const responses = [
+                "Hello there!",
+                "How can I help you today?",
+                "That's interesting!",
+                "I'm just a simple chatbot.",
+                "Could you tell me more about that?"
+            ];
+            
+            // Random response
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            // Display bot response after a short delay
+            setTimeout(() => {
+                chatbox.innerHTML += `<div class="bot-message">Bot: ${randomResponse}</div>`;
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }, 500);
+            
+            // Clear input
+            userInput.value = '';
+        }
+        
+        // Allow pressing Enter to send message
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>
