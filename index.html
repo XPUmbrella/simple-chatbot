@@ -3,533 +3,527 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Simple Chatbot</title>
+    <title>Simple Chatbot</title>
     <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --bot-color: #f1f1f1;
+            --user-color: #e3f2fd;
+            --text-color: #333;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f9f9f9;
         }
+        
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
         .chat-container {
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             overflow: hidden;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
         }
+        
         .chat-header {
-            background-color: #4a89dc;
+            background-color: var(--primary-color);
             color: white;
             padding: 15px;
-            font-size: 1.2em;
+            text-align: center;
             font-weight: bold;
         }
-        .chat-box {
-            height: 400px;
-            padding: 15px;
-            overflow-y: auto;
-            background-color: #fafafa;
-        }
-        .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 18px;
-            max-width: 70%;
-            word-wrap: break-word;
-            line-height: 1.4;
-        }
-        .user-message {
-            background-color: #e3f2fd;
-            margin-left: auto;
-            border-bottom-right-radius: 5px;
-            text-align: right;
-        }
-        .bot-message {
-            background-color: #f1f1f1;
-            margin-right: auto;
-            border-bottom-left-radius: 5px;
-            text-align: left;
-        }
-        .input-area {
-            display: flex;
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #eee;
-        }
-        #userInput {
+        
+        .chat-messages {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            outline: none;
-            font-size: 16px;
-        }
-        #sendButton {
-            margin-left: 10px;
-            padding: 12px 20px;
-            background-color: #4a89dc;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        #sendButton:hover {
-            background-color: #3b7dd8;
-        }
-        .control-panel {
-            margin-top: 20px;
-            background-color: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .control-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .control-buttons button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #addSpeechBtn {
-            background-color: #5cb85c;
-            color: white;
-        }
-        #addFunctionBtn {
-            background-color: #5bc0de;
-            color: white;
-        }
-        #showCommandsBtn {
-            background-color: #f0ad4e;
-            color: white;
-        }
-        .tts-controls {
-            display: flex;
-            gap: 10px;
-        }
-        .tts-controls button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #readBtn {
-            background-color: #5cb85c;
-            color: white;
-        }
-        #pauseBtn {
-            background-color: #f0ad4e;
-            color: white;
-        }
-        #resumeBtn {
-            background-color: #5bc0de;
-            color: white;
-        }
-        #stopBtn {
-            background-color: #d9534f;
-            color: white;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
             padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 600px;
-            max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .command-form {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-        .command-form input, .command-form textarea {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+        
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            word-wrap: break-word;
         }
-        .command-form textarea {
-            min-height: 150px;
-            font-family: monospace;
+        
+        .bot-message {
+            align-self: flex-start;
+            background-color: var(--bot-color);
+            border-bottom-left-radius: 5px;
         }
-        .command-form button {
-            padding: 12px;
-            background-color: #4a89dc;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+        
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-color);
+            border-bottom-right-radius: 5px;
         }
-        .command-list {
-            margin-top: 20px;
-        }
-        .command-item {
-            background-color: #f9f9f9;
+        
+        .chat-input {
+            display: flex;
             padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border-left: 4px solid #4a89dc;
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
         }
-        .command-item h3 {
-            margin-top: 0;
-            color: #333;
+        
+        #user-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
         }
-        .command-item button {
-            padding: 5px 10px;
-            background-color: #d9534f;
+        
+        #send-btn {
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 25px;
+            padding: 10px 20px;
+            margin-left: 10px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        
+        #send-btn:hover {
+            background-color: #3367d6;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: var(--bot-color);
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #666;
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .help-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--secondary-color);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .help-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .help-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 70vh;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
         }
     </style>
 </head>
 <body>
+    <h1>Simple Chatbot</h1>
+    
     <div class="chat-container">
         <div class="chat-header">
-            Enhanced Chatbot
+            ChatBot Assistant
         </div>
-        <div class="chat-box" id="chatBox"></div>
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Type your message...">
-            <button id="sendButton">Send</button>
+        
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
         </div>
-    </div>
-
-    <div class="control-panel">
-        <div class="control-buttons">
-            <button id="addSpeechBtn">Add Speech Command</button>
-            <button id="addFunctionBtn">Add Function Command</button>
-            <button id="showCommandsBtn">View Commands</button>
+        
+        <div class="typing-indicator" id="typing-indicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
         </div>
-        <div class="tts-controls">
-            <button id="readBtn">🔊 Read Last</button>
-            <button id="pauseBtn" disabled>⏸ Pause</button>
-            <button id="resumeBtn" disabled>▶ Resume</button>
-            <button id="stopBtn" disabled>⏹ Stop</button>
+        
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-btn">Send</button>
         </div>
     </div>
-
-    <div id="commandModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="modalBody"></div>
-        </div>
-    </div>
-
-    <script>
-        // Chatbot Application
-        const commands = [
-            {
-                type: "speech",
-                triggers: ["hello", "hi", "hey"],
-                response: "Hello there! How can I help you today?"
-            },
-            {
-                type: "function",
-                triggers: ["time", "what time is it"],
-                action: function() {
-                    const now = new Date();
-                    addMessage("bot", `The current time is ${now.toLocaleTimeString()}`);
-                },
-                name: "Time Command"
-            }
-        ];
-
-        // DOM Elements
-        const chatBox = document.getElementById("chatBox");
-        const userInput = document.getElementById("userInput");
-        const sendButton = document.getElementById("sendButton");
-        const modal = document.getElementById("commandModal");
-        const modalBody = document.getElementById("modalBody");
-        const closeBtn = document.querySelector(".close");
-
-        // TTS Elements
-        const synth = window.speechSynthesis;
-        let currentUtterance = null;
-        let isPaused = false;
-
-        // Initialize the chatbot
-        function init() {
-            // Event Listeners
-            sendButton.addEventListener("click", sendMessage);
-            userInput.addEventListener("keypress", function(e) {
-                if (e.key === "Enter") sendMessage();
-            });
-
-            document.getElementById("addSpeechBtn").addEventListener("click", () => openModal("speech"));
-            document.getElementById("addFunctionBtn").addEventListener("click", () => openModal("function"));
-            document.getElementById("showCommandsBtn").addEventListener("click", showCommands);
-
-            document.getElementById("readBtn").addEventListener("click", readLastMessage);
-            document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
-            document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
-            document.getElementById("stopBtn").addEventListener("click", stopSpeech);
-
-            closeBtn.addEventListener("click", () => modal.style.display = "none");
-            window.addEventListener("click", (event) => {
-                if (event.target === modal) modal.style.display = "none";
-            });
-
-            // Add welcome message
-            setTimeout(() => {
-                addMessage("bot", "Hello! I'm your enhanced chatbot. Try saying 'hello' or ask 'what time is it?'");
-            }, 500);
-        }
-
-        // Message Functions
-        function addMessage(sender, message) {
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message", `${sender}-message`);
-            messageElement.textContent = message;
-            chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function sendMessage() {
-            const message = userInput.value.trim();
-            if (message) {
-                addMessage("user", message);
-                userInput.value = "";
-                processCommand(message);
-            }
-        }
-
-        function processCommand(input) {
-            const cmd = commands.find(c => 
-                c.triggers.some(t => input.toLowerCase().includes(t.toLowerCase()))
-            );
-
-            if (cmd) {
-                if (cmd.type === "speech") {
-                    addMessage("bot", cmd.response);
-                } else if (cmd.type === "function") {
-                    try {
-                        cmd.action();
-                    } catch (e) {
-                        addMessage("bot", `Error: ${e.message}`);
-                        console.error("Command error:", e);
-                    }
-                }
-                return true;
-            }
-            
-            addMessage("bot", "I didn't understand that. Try 'hello' or 'what time is it?'");
-            return false;
-        }
-
-        // Command Management
-        function openModal(type) {
-            modalBody.innerHTML = "";
-            
-            if (type === "speech") {
-                modalBody.innerHTML = `
-                    <h2>Add Speech Command</h2>
-                    <div class="command-form">
-                        <label for="triggers">Trigger Phrases (comma separated):</label>
-                        <input type="text" id="triggers" placeholder="hello,hi,hey">
-                        
-                        <label for="response">Response Text:</label>
-                        <textarea id="response" placeholder="Enter the response text here..."></textarea>
-                        
-                        <button onclick="addCommand('speech')">Add Command</button>
-                    </div>
-                `;
-            } else {
-                modalBody.innerHTML = `
-                    <h2>Add Function Command</h2>
-                    <div class="command-form">
-                        <label for="funcTriggers">Trigger Phrases (comma separated):</label>
-                        <input type="text" id="funcTriggers" placeholder="time,what time is it">
-                        
-                        <label for="funcName">Command Name (optional):</label>
-                        <input type="text" id="funcName" placeholder="Time Command">
-                        
-                        <label for="funcCode">Function Code:</label>
-                        <textarea id="funcCode">function execute() {
-    // Available variables:
-    // addMessage(sender, message)
-    // chatBox (DOM element)
     
-    // Example:
-    const now = new Date();
-    addMessage('bot', 'Current time: ' + now.toLocaleTimeString());
-}</textarea>
-                        
-                        <button onclick="addCommand('function')">Add Command</button>
-                    </div>
+    <div class="help-btn" id="help-btn">?</div>
+    
+    <div class="help-modal" id="help-modal">
+        <div class="help-content">
+            <span class="close-btn" id="close-help">&times;</span>
+            <h2>ChatBot Help</h2>
+            <p>Here are the commands you can use:</p>
+            
+            <h3>Basic Commands:</h3>
+            <ul>
+                <li><strong>hello/hi/hey</strong> - Greet the chatbot</li>
+                <li><strong>time</strong> - Get current time</li>
+                <li><strong>date</strong> - Get current date</li>
+                <li><strong>joke</strong> - Hear a random joke</li>
+                <li><strong>weather [location]</strong> - Get weather information (simulated)</li>
+                <li><strong>calculate [expression]</strong> - Do simple math (e.g., 'calculate 2+2')</li>
+            </ul>
+            
+            <h3>Memory Commands:</h3>
+            <ul>
+                <li><strong>remember [key] [value]</strong> - Store information</li>
+                <li><strong>recall [key]</strong> - Recall stored information</li>
+                <li><strong>clear</strong> - Clear all stored information</li>
+            </ul>
+            
+            <h3>Other Commands:</h3>
+            <ul>
+                <li><strong>help</strong> - Show this help message</li>
+                <li><strong>about</strong> - Learn about this chatbot</li>
+                <li><strong>quit/exit</strong> - End the conversation</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeHelp = document.getElementById('close-help');
+            
+            let userName = "User";
+            let memory = JSON.parse(localStorage.getItem('chatbotMemory')) || {
+                facts: {},
+                sessions: 0
+            };
+            
+            // Initialize with a greeting if it's a new session
+            if (!memory.sessions) {
+                addBotMessage("Hello! I'm your simple chatbot. Type 'help' to see what I can do.");
+            }
+            memory.sessions++;
+            saveMemory();
+            
+            // Focus input field on load
+            userInput.focus();
+            
+            // Send message when button is clicked
+            sendBtn.addEventListener('click', sendMessage);
+            
+            // Send message when Enter is pressed
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Help button functionality
+            helpBtn.addEventListener('click', function() {
+                helpModal.style.display = 'flex';
+            });
+            
+            closeHelp.addEventListener('click', function() {
+                helpModal.style.display = 'none';
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === helpModal) {
+                    helpModal.style.display = 'none';
+                }
+            });
+            
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message === '') return;
+                
+                // Add user message to chat
+                addUserMessage(message);
+                userInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.style.display = 'flex';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Process after a short delay to simulate thinking
+                setTimeout(() => {
+                    typingIndicator.style.display = 'none';
+                    const response = processCommand(message);
+                    addBotMessage(response);
+                    
+                    // Check if it's time to quit
+                    if (message.toLowerCase() === 'quit' || message.toLowerCase() === 'exit') {
+                        userInput.disabled = true;
+                        sendBtn.disabled = true;
+                    }
+                }, 1000 + Math.random() * 1000);
+            }
+            
+            function addUserMessage(message) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', 'user-message');
+                messageElement.textContent = message;
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function addBotMessage(message) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', 'bot-message');
+                messageElement.textContent = message;
+                chatMessages.appendChild(messageElement);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function processCommand(userInput) {
+                if (!userInput.trim()) {
+                    return "Please say something or type 'help' for options.";
+                }
+                
+                // Split input into command and arguments
+                const parts = userInput.toLowerCase().split(' ');
+                const command = parts[0];
+                const args = parts.slice(1);
+                
+                // Check for known commands
+                if (command === 'hello' || command === 'hi' || command === 'hey') {
+                    return respondToGreeting();
+                } else if (command === 'time') {
+                    return tellTime();
+                } else if (command === 'date') {
+                    return tellDate();
+                } else if (command === 'joke') {
+                    return tellJoke();
+                } else if (command === 'help') {
+                    return showHelp();
+                } else if (command === 'remember') {
+                    if (args.length < 2) {
+                        return "Please provide both a key and value to remember.";
+                    }
+                    const key = args[0];
+                    const value = args.slice(1).join(' ');
+                    return rememberInfo(key, value);
+                } else if (command === 'recall') {
+                    if (!args.length) {
+                        return "Please specify what you want me to recall.";
+                    }
+                    return recallInfo(args.join(' '));
+                } else if (command === 'clear') {
+                    return clearMemory();
+                } else if (command === 'quit' || command === 'exit') {
+                    return quitChat();
+                } else if (command === 'weather') {
+                    return weatherInfo(args.join(' '));
+                } else if (command === 'calculate') {
+                    if (!args.length) {
+                        return "Please provide an expression to calculate.";
+                    }
+                    return calculate(args.join(' '));
+                } else if (command === 'about') {
+                    return aboutInfo();
+                }
+                
+                // If no command matched, provide a default response
+                const defaultResponses = [
+                    "I'm not sure what you mean. Type 'help' to see what I can do.",
+                    `Sorry, I don't understand '${userInput}'. Try asking for 'help'.`,
+                    "Interesting... but I'm not programmed to respond to that. Need 'help'?",
+                    "Could you rephrase that? Type 'help' for available commands."
+                ];
+                return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+            }
+            
+            function respondToGreeting() {
+                const greetings = [
+                    `Hello ${userName}! How can I help you today?`,
+                    `Hi there ${userName}! What's on your mind?`,
+                    `Hey ${userName}! Nice to see you again!`,
+                    `Greetings ${userName}! How can I assist you?`
+                ];
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
+            
+            function tellTime() {
+                const now = new Date();
+                return `The current time is ${now.toLocaleTimeString()}`;
+            }
+            
+            function tellDate() {
+                const now = new Date();
+                return `Today's date is ${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+            }
+            
+            function tellJoke() {
+                const jokes = [
+                    "Why don't scientists trust atoms? Because they make up everything!",
+                    "Why did the scarecrow win an award? Because he was outstanding in his field!",
+                    "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+                    "What do you call a fake noodle? An impasta!",
+                    "How do you organize a space party? You planet!"
+                ];
+                return jokes[Math.floor(Math.random() * jokes.length)];
+            }
+            
+            function showHelp() {
+                helpModal.style.display = 'flex';
+                return "I've opened the help menu for you!";
+            }
+            
+            function rememberInfo(key, value) {
+                memory.facts[key.toLowerCase()] = value;
+                saveMemory();
+                return `I've remembered '${key}' for you.`;
+            }
+            
+            function recallInfo(key) {
+                key = key.toLowerCase();
+                if (key in memory.facts) {
+                    return `You told me that '${key}' is: ${memory.facts[key]}`;
+                } else {
+                    return `I don't remember anything about '${key}'.`;
+                }
+            }
+            
+            function clearMemory() {
+                memory.facts = {};
+                saveMemory();
+                return "I've cleared all my memories.";
+            }
+            
+            function quitChat() {
+                return "Goodbye! Have a great day!";
+            }
+            
+            function weatherInfo(location = "") {
+                if (!location) {
+                    location = "your area";
+                }
+                
+                const weatherTypes = ["sunny", "rainy", "cloudy", "windy", "snowy"];
+                const temps = Math.floor(Math.random() * 41) - 5; // -5 to 35
+                return `The weather in ${location} is ${weatherTypes[Math.floor(Math.random() * weatherTypes.length)]} with a temperature of ${temps}°C.`;
+            }
+            
+            function calculate(expression) {
+                try {
+                    // Security note: In a real application, you'd want to sanitize the input
+                    // This is a simple example - don't use eval() in production without proper sanitization
+                    const result = eval(expression.replace(/[^-()\d/*+.]/g, ''));
+                    return `The result of ${expression} is ${result}`;
+                } catch {
+                    return "Sorry, I couldn't calculate that. Please check your expression.";
+                }
+            }
+            
+            function aboutInfo() {
+                return `
+                About ChatBot:
+                --------------------------
+                Version: 1.2
+                Features: Simple chatbot with enhanced command system
+                Memory: Can remember facts between sessions
+                Sessions: ${memory.sessions} chats so far
+                --------------------------
                 `;
             }
             
-            modal.style.display = "block";
-        }
-
-        function addCommand(type) {
-            try {
-                if (type === "speech") {
-                    const triggers = document.getElementById("triggers").value.split(',').map(t => t.trim());
-                    const response = document.getElementById("response").value;
-                    
-                    if (!triggers.length || !response) {
-                        alert("Please fill in all required fields");
-                        return;
-                    }
-                    
-                    commands.push({
-                        type: "speech",
-                        triggers: triggers,
-                        response: response
-                    });
-                } else {
-                    const triggers = document.getElementById("funcTriggers").value.split(',').map(t => t.trim());
-                    const funcName = document.getElementById("funcName").value.trim();
-                    const funcCode = document.getElementById("funcCode").value;
-                    
-                    if (!triggers.length || !funcCode) {
-                        alert("Please fill in all required fields");
-                        return;
-                    }
-                    
-                    // Create the function safely
-                    const func = new Function(`${funcCode}\nreturn execute;`)();
-                    
-                    commands.push({
-                        type: "function",
-                        triggers: triggers,
-                        action: func,
-                        name: funcName || "Unnamed Function"
-                    });
-                }
-                
-                modal.style.display = "none";
-                alert("Command added successfully!");
-            } catch (e) {
-                alert(`Error: ${e.message}`);
-                console.error("Command creation error:", e);
+            function saveMemory() {
+                localStorage.setItem('chatbotMemory', JSON.stringify(memory));
             }
-        }
-
-        function showCommands() {
-            modalBody.innerHTML = `
-                <h2>Command List (${commands.length})</h2>
-                <input type="text" id="commandFilter" placeholder="Filter commands..." style="width:100%;padding:8px;margin-bottom:15px;">
-                <div class="command-list" id="commandList">
-                    ${commands.map((cmd, i) => `
-                        <div class="command-item">
-                            <h3>${cmd.name || cmd.type.toUpperCase()} Command</h3>
-                            <p><strong>Type:</strong> ${cmd.type}</p>
-                            <p><strong>Triggers:</strong> ${cmd.triggers.join(', ')}</p>
-                            ${cmd.type === 'speech' ? `<p><strong>Response:</strong> ${cmd.response.length > 50 ? cmd.response.substring(0, 50) + '...' : cmd.response}</p>` : ''}
-                            <button onclick="deleteCommand(${i})">Delete</button>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
             
-            // Add filtering functionality
-            document.getElementById("commandFilter").addEventListener("input", function() {
-                const filter = this.value.toLowerCase();
-                document.querySelectorAll(".command-item").forEach(item => {
-                    item.style.display = item.textContent.toLowerCase().includes(filter) ? "block" : "none";
-                });
-            });
-            
-            modal.style.display = "block";
-        }
-
-        function deleteCommand(index) {
-            if (confirm("Are you sure you want to delete this command?")) {
-                commands.splice(index, 1);
-                showCommands();
-            }
-        }
-
-        // TTS Functions
-        function readLastMessage() {
-            stopSpeech();
-            
-            const messages = document.querySelectorAll(".bot-message");
-            if (messages.length > 0) {
-                const text = messages[messages.length - 1].textContent;
-                currentUtterance = new SpeechSynthesisUtterance(text);
-                
-                currentUtterance.onend = function() {
-                    currentUtterance = null;
-                    updateTtsControls();
+            // Ask for user's name if it's the first message
+            if (memory.sessions === 1) {
+                addBotMessage("Hello! What's your name?");
+                const originalProcessCommand = processCommand;
+                processCommand = function(userInput) {
+                    userName = userInput.trim() || "User";
+                    addBotMessage(`Nice to meet you, ${userName}! How can I help you today?`);
+                    processCommand = originalProcessCommand;
+                    return "";
                 };
-                
-                synth.speak(currentUtterance);
-                updateTtsControls();
             }
-        }
-
-        function pauseSpeech() {
-            if (synth.speaking) {
-                synth.pause();
-                isPaused = true;
-                updateTtsControls();
-            }
-        }
-
-        function resumeSpeech() {
-            if (isPaused) {
-                synth.resume();
-                isPaused = false;
-                updateTtsControls();
-            }
-        }
-
-        function stopSpeech() {
-            synth.cancel();
-            currentUtterance = null;
-            isPaused = false;
-            updateTtsControls();
-        }
-
-        function updateTtsControls() {
-            const isSpeaking = synth.speaking;
-            document.getElementById("pauseBtn").disabled = !isSpeaking || isPaused;
-            document.getElementById("resumeBtn").disabled = !isPaused;
-            document.getElementById("stopBtn").disabled = !isSpeaking;
-        }
-
-        // Make functions available globally
-        window.addCommand = addCommand;
-        window.deleteCommand = deleteCommand;
-
-        // Initialize the chatbot
-        document.addEventListener("DOMContentLoaded", init);
+        });
     </script>
 </body>
 </html>
