@@ -1,75 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Chatbot</title>
+    <title>Smarter Chatbot</title>
     <style>
         #chatbox {
-            width: 400px;
-            height: 500px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: scroll;
-            margin-bottom: 10px;
+            width: 500px;
+            height: 400px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background: #f9f9f9;
         }
         .user-message {
-            text-align: right;
-            margin: 5px;
-            padding: 5px;
-            background-color: #e3f2fd;
-            border-radius: 5px;
+            background: #e3f2fd;
+            padding: 8px 12px;
+            border-radius: 18px;
+            margin: 5px 0;
+            max-width: 80%;
+            margin-left: auto;
         }
         .bot-message {
-            text-align: left;
-            margin: 5px;
-            padding: 5px;
-            background-color: #f1f1f1;
-            border-radius: 5px;
+            background: #f1f1f1;
+            padding: 8px 12px;
+            border-radius: 18px;
+            margin: 5px 0;
+            max-width: 80%;
+        }
+        #userInput {
+            width: 400px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+    <h1>Smart Chatbot</h1>
     <div id="chatbox"></div>
-    <input type="text" id="userInput" placeholder="Type your message here...">
+    <input type="text" id="userInput" placeholder="Ask me anything..." autofocus>
     <button onclick="sendMessage()">Send</button>
 
     <script>
+        // Knowledge base for intelligent responses
+        const knowledgeBase = {
+            greetings: ["hello", "hi", "hey"],
+            farewells: ["bye", "goodbye", "see you"],
+            questions: {
+                "your name": "I'm ChatBot 2.0!",
+                "the time": `It's currently ${new Date().toLocaleTimeString()}`,
+                "the date": `Today is ${new Date().toLocaleDateString()}`,
+                "weather": "I can't check real-time weather, but you can try weather.com!"
+            },
+            responses: {
+                default: ["Interesting!", "Tell me more.", "I see.", "How does that make you feel?"],
+                greeting: ["Hello there!", "Hi! How can I help?", "Greetings!"],
+                farewell: ["Goodbye!", "See you later!", "Have a great day!"]
+            }
+        };
+
+        function analyzeMessage(message) {
+            const lowerMsg = message.toLowerCase();
+            
+            // Check for greetings
+            if (knowledgeBase.greetings.some(word => lowerMsg.includes(word))) {
+                return { type: "greeting", response: randomChoice(knowledgeBase.responses.greeting) };
+            }
+            
+            // Check for farewells
+            if (knowledgeBase.farewells.some(word => lowerMsg.includes(word))) {
+                return { type: "farewell", response: randomChoice(knowledgeBase.responses.farewell) };
+            }
+            
+            // Check for specific questions
+            for (const [question, answer] of Object.entries(knowledgeBase.questions)) {
+                if (lowerMsg.includes(question)) {
+                    return { type: "fact", response: answer };
+                }
+            }
+            
+            // Default response
+            return { type: "default", response: randomChoice(knowledgeBase.responses.default) };
+        }
+
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
         function sendMessage() {
             const userInput = document.getElementById('userInput');
             const message = userInput.value.trim();
             
-            if(message === '') return;
+            if (!message) return;
             
             // Display user message
-            const chatbox = document.getElementById('chatbox');
-            chatbox.innerHTML += `<div class="user-message">You: ${message}</div>`;
+            displayMessage(message, 'user');
             
-            // Simple bot responses
-            const responses = [
-                "Hello there!",
-                "How can I help you today?",
-                "That's interesting!",
-                "I'm just a simple chatbot.",
-                "Could you tell me more about that?"
-            ];
-            
-            // Random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            
-            // Display bot response after a short delay
+            // Process and respond
             setTimeout(() => {
-                chatbox.innerHTML += `<div class="bot-message">Bot: ${randomResponse}</div>`;
-                chatbox.scrollTop = chatbox.scrollHeight;
+                const analysis = analyzeMessage(message);
+                displayMessage(analysis.response, 'bot');
             }, 500);
             
-            // Clear input
             userInput.value = '';
         }
-        
-        // Allow pressing Enter to send message
-        document.getElementById('userInput').addEventListener('keypress', function(e) {
-            if(e.key === 'Enter') {
-                sendMessage();
-            }
+
+        function displayMessage(message, sender) {
+            const chatbox = document.getElementById('chatbox');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${sender}-message`;
+            messageDiv.textContent = sender === 'user' ? `You: ${message}` : `Bot: ${message}`;
+            chatbox.appendChild(messageDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        // Send message on Enter key
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
     </script>
 </body>
