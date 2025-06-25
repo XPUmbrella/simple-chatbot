@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Assistant</title>
+    <title>Ultimate Learning Chatbot</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -410,14 +411,6 @@
             cursor: pointer;
         }
 
-        .close:hover {
-            color: black;
-        }
-
-        .dark-mode .close:hover {
-            color: white;
-        }
-
         .command-item {
             background-color: #f9f9f9;
             padding: 15px;
@@ -450,10 +443,6 @@
             align-items: center;
             justify-content: center;
             box-shadow: var(--shadow);
-        }
-
-        .settings-btn:hover {
-            transform: rotate(30deg);
         }
 
         .settings-panel {
@@ -639,8 +628,8 @@
 </head>
 <body>
     <div class="settings-menu">
-        <button class="settings-btn" id="settingsBtn">⚙️</button>
-        <div class="settings-panel" id="settingsPanel">
+        <button class="settings-btn">⚙️</button>
+        <div class="settings-panel">
             <h3>Settings</h3>
             <div class="settings-option">
                 <label for="botNameInput">Bot Name:</label>
@@ -697,10 +686,10 @@
         <div class="date" id="fsDate"></div>
     </div>
 
-    <h1>AI Chat Assistant</h1>
+    <h1>Ultimate Learning Chatbot</h1>
     
     <div class="chat-container">
-        <div class="chat-header" id="chatHeader">
+        <div class="chat-header">
             ChatBot Assistant
         </div>
         <div class="chat-box" id="chatBox">
@@ -798,8 +787,6 @@
         const memoryModal = document.getElementById('memoryModal');
         const memoryList = document.getElementById('memoryList');
         const fileInput = document.getElementById('fileInput');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const settingsPanel = document.getElementById('settingsPanel');
 
         // Initialize memory systems
         if (!localStorage.getItem('chatbotMemory')) {
@@ -821,6 +808,7 @@
         let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
         let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
 
+
         // ======================
         // SETTINGS SYSTEM
         // ======================
@@ -829,16 +817,9 @@
 
         function initSettings() {
             // Toggle settings panel
-            settingsBtn.addEventListener('click', function(e) {
-                e.stopPropagation(); // Prevent immediate closing
-                settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
-            });
-
-            // Close settings panel when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!settingsPanel.contains(e.target) {
-                    settingsPanel.style.display = 'none';
-                }
+            document.querySelector('.settings-btn').addEventListener('click', function() {
+                const panel = document.querySelector('.settings-panel');
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             });
 
             // Bot name setting
@@ -889,6 +870,9 @@
                 localStorage.setItem('voicePitch', voicePitch);
             });
 
+            // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
+            // to ensure voices are loaded before selection.
+
             // Auto Speak Bot Responses toggle
             const autoSpeakBotToggle = document.getElementById('autoSpeakBotToggle');
             autoSpeakBotToggle.checked = speakBotResponsesAutomatically;
@@ -912,7 +896,7 @@
         }
 
         function updateChatHeader() {
-            document.getElementById('chatHeader').textContent = `${botName}`;
+            document.querySelector('.chat-header').textContent = `${botName}`;
         }
 
         function populateVoiceList() {
@@ -928,53 +912,61 @@
             // Get all available voices
             const voices = synth.getVoices();
             
-            // Group voices by language and type
-            const voiceGroups = {
-                'British English': voices.filter(v => v.lang.includes('en-GB')),
-                'American English': voices.filter(v => v.lang.includes('en-US')),
-                'Australian English': voices.filter(v => v.lang.includes('en-AU')),
-                'Other English': voices.filter(v => v.lang.includes('en-') && 
-                    !v.lang.includes('en-GB') && 
-                    !v.lang.includes('en-US') && 
-                    !v.lang.includes('en-AU')),
-                'Other Languages': voices.filter(v => !v.lang.includes('en-'))
-            };
-
-            // Add each group to the select
-            for (const [groupName, groupVoices] of Object.entries(voiceGroups)) {
-                if (groupVoices.length > 0) {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = groupName;
+            // Try to find British voices first
+            const britishVoices = voices.filter(v => v.lang.includes('en-GB'));
+            const otherEnglishVoices = voices.filter(v => v.lang.includes('en-') && !v.lang.includes('en-GB'));
+            
+            // Add British voices first
+            if (britishVoices.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'British Voices';
+                britishVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = voice.name;
+                    optgroup.appendChild(option);
                     
-                    groupVoices.forEach(voice => {
-                        const option = document.createElement('option');
-                        option.textContent = `${voice.name} (${voice.lang})`;
-                        option.value = voice.name;
-                        optgroup.appendChild(option);
-                        
-                        // Pre-select a high-quality voice if none is selected
-                        if (!selectedVoice && (voice.name.includes('Natural') || voice.name.includes('Premium'))) {
-                            option.selected = true;
-                            selectedVoice = voice;
-                        }
-                    });
-                    
-                    voiceSelect.appendChild(optgroup);
-                }
+                    // Prefer British male voices
+                    if (voice.name.includes('Male') || voice.name.includes('George')) {
+                        option.selected = true;
+                        selectedVoice = voice;
+                    }
+                });
+                voiceSelect.appendChild(optgroup);
+            }
+            
+            // Add other English voices
+            if (otherEnglishVoices.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Other English Voices';
+                otherEnglishVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = voice.name;
+                    optgroup.appendChild(option);
+                });
+                voiceSelect.appendChild(optgroup);
             }
 
             // After populating, try to set the saved voice
             const savedVoiceName = localStorage.getItem('selectedVoice');
             if (savedVoiceName) {
-                const allVoices = synth.getVoices();
+                const allVoices = synth.getVoices(); // Get fresh list
                 const voiceToSelect = allVoices.find(v => v.name === savedVoiceName);
                 if (voiceToSelect) {
                     voiceSelect.value = savedVoiceName;
-                    selectedVoice = voiceToSelect;
+                    selectedVoice = voiceToSelect; // Update the global selectedVoice
                 } else {
+                    // If saved voice not found, clear the invalid entry
                     localStorage.removeItem('selectedVoice');
-                    selectedVoice = null; 
+                    selectedVoice = null;
                 }
+            }
+            // If no saved voice or saved voice not found, and a default British Male was selected earlier,
+            // ensure 'selectedVoice' variable matches the dropdown.
+            if (!selectedVoice && voiceSelect.value) {
+                 const allVoices = synth.getVoices();
+                 selectedVoice = allVoices.find(v => v.name === voiceSelect.value);
             }
         }
 
@@ -1181,7 +1173,7 @@
             
             if (lowerMsg.startsWith("remember ")) {
                 const content = message.substring("remember ".length).trim();
-                
+
                 // Specific pattern: "my name is [Name]"
                 const nameIsPattern = /my name is (.+)/i;
                 const nameIsMatch = content.match(nameIsPattern);
@@ -1191,7 +1183,8 @@
                 }
 
                 // Specific pattern: "I am [Name]" (more general, could be context-dependent)
-                const iAmPattern = /i am (.+)/i; 
+                // For now, let's assume if it follows "remember", it's for the user's name.
+                const iAmPattern = /i am (.+)/i;
                 const iAmMatch = content.match(iAmPattern);
                 if (iAmMatch && iAmMatch[1]) {
                     rememberFact("userName", iAmMatch[1].trim());
@@ -1205,7 +1198,7 @@
                     const value = parts.slice(1).join(" ");
                     rememberFact(key, value);
                     return true;
-                } else if (parts.length === 1 && content.includes("=")) { 
+                } else if (parts.length === 1 && content.includes("=")) {
                     // Support "remember key=value"
                     const kv = content.split('=');
                     if (kv.length === 2 && kv[0].trim() && kv[1].trim()) {
@@ -1597,7 +1590,7 @@
                 utterance.voice = selectedVoice;
             } else {
                 // Fallback to preferred or any available English voice
-                utterance.voice = getPreferredVoice(); 
+                utterance.voice = getPreferredVoice();
             }
             utterance.rate = voiceRate;
             utterance.pitch = voicePitch;
@@ -1656,78 +1649,12 @@
                 };
             }
 
-            // Event listeners
+            // Initial population in case onvoiceschanged fired before listener was set
+            populateVoiceList();
+
+            // Event Listeners
             sendButton.addEventListener('click', sendMessage);
             userInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+                if (e.key === 'Enter') sendMessage();
             });
 
-            micButton.addEventListener('click', toggleSpeechRecognition);
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                userInput.value = transcript;
-                sendMessage();
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error', event.error);
-                statusElement.textContent = `Error: ${event.error}`;
-                micButton.classList.remove('listening');
-                isListening = false;
-            };
-
-            recognition.onend = function() {
-                if (isListening) {
-                    recognition.start(); // Restart if still in listening mode
-                }
-            };
-
-            // Memory control buttons
-            document.getElementById('showMemoryBtn').addEventListener('click', showAllMemories);
-            document.getElementById('downloadMemoryBtn').addEventListener('click', downloadMemories);
-            document.getElementById('uploadMemoryBtn').addEventListener('click', uploadMemories);
-            document.getElementById('clearMemoryBtn').addEventListener('click', clearAllMemories);
-            fileInput.addEventListener('change', handleFileUpload);
-
-            // Voice control buttons
-            document.getElementById('readLastMessageBtn').addEventListener('click', speakLastChatMessage);
-            document.getElementById('readMyLastBtn').addEventListener('click', speakUserLastMessage);
-            document.getElementById('readSelectedBtn').addEventListener('click', speakSelectedText);
-            document.getElementById('pauseBtn').addEventListener('click', pauseSpeech);
-            document.getElementById('resumeBtn').addEventListener('click', resumeSpeech);
-            document.getElementById('stopBtn').addEventListener('click', stopSpeech);
-
-            // Fun feature buttons
-            document.getElementById('jokeBtn').addEventListener('click', tellJoke);
-            document.getElementById('quoteBtn').addEventListener('click', tellQuote);
-            document.getElementById('factBtn').addEventListener('click', tellFact);
-            document.getElementById('poemBtn').addEventListener('click', writePoem);
-            document.getElementById('riddleBtn').addEventListener('click', tellRiddle);
-            document.getElementById('storyBtn').addEventListener('click', tellStory);
-
-            // Modal close button
-            document.querySelector('.close').addEventListener('click', function() {
-                memoryModal.style.display = 'none';
-            });
-
-            // Close modal when clicking outside
-            window.addEventListener('click', function(event) {
-                if (event.target === memoryModal) {
-                    memoryModal.style.display = 'none';
-                }
-            });
-
-            // Initial greeting
-            setTimeout(() => {
-                respondToQuery(`Hi! I'm ${botName}, your AI assistant. You can teach me things by saying "Remember my name is Alex" or ask me to recall information.`);
-            }, 1000);
-        }
-
-        // Initialize when the page loads
-        window.onload = init;
-    </script>
-</body>
-</html>
