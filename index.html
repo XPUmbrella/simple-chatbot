@@ -482,7 +482,7 @@
             font-weight: 500;
         }
 
-        select, input[type="text"] {
+        select, input[type="text"], input[type="range"] {
             width: 100%;
             padding: 8px;
             border-radius: 5px;
@@ -492,7 +492,8 @@
         }
 
         .dark-mode select,
-        .dark-mode input[type="text"] {
+        .dark-mode input[type="text"],
+        .dark-mode input[type="range"] {
             background: #333;
             border-color: #555;
             color: white;
@@ -543,6 +544,70 @@
             transform: translateX(22px);
         }
 
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-value {
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .features-panel {
+            background: white;
+            border-radius: 14px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .dark-mode .features-panel {
+            background: var(--dark-bot-color);
+        }
+
+        .feature-buttons {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            flex-wrap: wrap;
+        }
+
+        .feature-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        #jokeBtn {
+            background-color: #7209b7;
+            color: white;
+        }
+
+        #quoteBtn {
+            background-color: #3a86ff;
+            color: white;
+        }
+
+        #factBtn {
+            background-color: #f8961e;
+            color: white;
+        }
+
+        #poemBtn {
+            background-color: #8338ec;
+            color: white;
+        }
+
+        #riddleBtn {
+            background-color: #ff006e;
+            color: white;
+        }
+
+        #storyBtn {
+            background-color: #3a86ff;
+            color: white;
+        }
+
         @media (max-width: 600px) {
             .chat-container {
                 height: 70vh;
@@ -550,7 +615,8 @@
             .message {
                 max-width: 90%;
             }
-            .memory-actions button {
+            .memory-actions button,
+            .feature-buttons button {
                 min-width: 100%;
             }
             .settings-panel {
@@ -571,6 +637,20 @@
             <div class="settings-option">
                 <label for="voiceSelect">Voice:</label>
                 <select id="voiceSelect"></select>
+            </div>
+            <div class="settings-option">
+                <label for="voiceRate">Voice Speed:</label>
+                <div class="range-container">
+                    <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
+                    <span class="range-value" id="rateValue">1</span>
+                </div>
+            </div>
+            <div class="settings-option">
+                <label for="voicePitch">Voice Pitch:</label>
+                <div class="range-container">
+                    <input type="range" id="voicePitch" min="0.5" max="2" step="0.1" value="1">
+                    <span class="range-value" id="pitchValue">1</span>
+                </div>
             </div>
             <div class="settings-option">
                 <label>Dark Mode:</label>
@@ -626,7 +706,7 @@
             <button id="uploadMemoryBtn">Upload Memories</button>
             <button id="clearMemoryBtn">Clear Memories</button>
         </div>
-        <input type="file" id="fileInput" accept=".txt">
+        <input type="file" id="fileInput" accept=".txt,.json">
     </div>
 
     <div class="control-panel">
@@ -638,6 +718,20 @@
             <button id="pauseBtn" disabled>⏸ Pause</button>
             <button id="resumeBtn" disabled>▶ Resume</button>
             <button id="stopBtn" disabled>⏹ Stop</button>
+        </div>
+    </div>
+
+    <div class="features-panel">
+        <div class="panel-header">
+            <div class="panel-title">Fun Features</div>
+        </div>
+        <div class="feature-buttons">
+            <button id="jokeBtn">😆 Tell a Joke</button>
+            <button id="quoteBtn">💬 Random Quote</button>
+            <button id="factBtn">🧠 Interesting Fact</button>
+            <button id="poemBtn">✍️ Write a Poem</button>
+            <button id="riddleBtn">🤔 Riddle Me</button>
+            <button id="storyBtn">📖 Short Story</button>
         </div>
     </div>
     
@@ -691,6 +785,10 @@
             lastEntities: {}
         };
 
+        // Voice settings
+        let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
+        let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
+
         // ======================
         // SETTINGS SYSTEM
         // ======================
@@ -730,6 +828,26 @@
                 const voices = synth.getVoices();
                 selectedVoice = voices.find(v => v.name === voiceName);
                 localStorage.setItem('selectedVoice', voiceName);
+            });
+
+            // Voice rate control
+            const voiceRateInput = document.getElementById('voiceRate');
+            voiceRateInput.value = voiceRate;
+            document.getElementById('rateValue').textContent = voiceRate;
+            voiceRateInput.addEventListener('input', function() {
+                voiceRate = parseFloat(this.value);
+                document.getElementById('rateValue').textContent = voiceRate;
+                localStorage.setItem('voiceRate', voiceRate);
+            });
+
+            // Voice pitch control
+            const voicePitchInput = document.getElementById('voicePitch');
+            voicePitchInput.value = voicePitch;
+            document.getElementById('pitchValue').textContent = voicePitch;
+            voicePitchInput.addEventListener('input', function() {
+                voicePitch = parseFloat(this.value);
+                document.getElementById('pitchValue').textContent = voicePitch;
+                localStorage.setItem('voicePitch', voicePitch);
             });
 
             // Load saved voice if exists
@@ -923,20 +1041,22 @@
                 history: history,
                 exportedAt: new Date().toISOString(),
                 botName: botName,
-                voice: selectedVoice ? selectedVoice.name : null
+                voice: selectedVoice ? selectedVoice.name : null,
+                voiceRate: voiceRate,
+                voicePitch: voicePitch
             };
             
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `chatbot-memory-${new Date().toISOString().split('T')[0]}.txt`;
+            a.download = `chatbot-memory-${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            respondToQuery("Memories downloaded as TXT file.", true);
+            respondToQuery("Memories downloaded as JSON file.", true);
         }
 
         function uploadMemories() {
@@ -970,6 +1090,18 @@
                         const voices = synth.getVoices();
                         selectedVoice = voices.find(v => v.name === data.voice);
                         localStorage.setItem('selectedVoice', data.voice);
+                    }
+                    if (data.voiceRate) {
+                        voiceRate = parseFloat(data.voiceRate);
+                        document.getElementById('voiceRate').value = voiceRate;
+                        document.getElementById('rateValue').textContent = voiceRate;
+                        localStorage.setItem('voiceRate', voiceRate);
+                    }
+                    if (data.voicePitch) {
+                        voicePitch = parseFloat(data.voicePitch);
+                        document.getElementById('voicePitch').value = voicePitch;
+                        document.getElementById('pitchValue').textContent = voicePitch;
+                        localStorage.setItem('voicePitch', voicePitch);
                     }
                     
                     respondToQuery("Memories successfully uploaded from file!", true);
@@ -1022,6 +1154,14 @@
                 } else {
                     respondToQuery(`I don't remember anything about "${keyword}".`, true);
                 }
+                return true;
+            }
+            
+            // Case 4: Import from text file
+            if (lowerMsg.startsWith("import from ")) {
+                const fileName = message.split("import from ")[1].trim();
+                // This would be handled by the file input in the UI
+                respondToQuery("Please use the 'Upload Memories' button to import from a file.", true);
                 return true;
             }
             
@@ -1173,6 +1313,83 @@
         }
 
         // ======================
+        // FUN FEATURES
+        // ======================
+        const jokes = [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "Did you hear about the mathematician who's afraid of negative numbers? He'll stop at nothing to avoid them!",
+            "Why don't skeletons fight each other? They don't have the guts!",
+            "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+            "What do you call a fake noodle? An impasta!"
+        ];
+
+        const quotes = [
+            "The only way to do great work is to love what you do. - Steve Jobs",
+            "Innovation distinguishes between a leader and a follower. - Steve Jobs",
+            "Your time is limited, don't waste it living someone else's life. - Steve Jobs",
+            "Stay hungry, stay foolish. - Steve Jobs",
+            "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt"
+        ];
+
+        const facts = [
+            "Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly good to eat.",
+            "Octopuses have three hearts, nine brains, and blue blood.",
+            "The shortest war in history was between Britain and Zanzibar on August 27, 1896. Zanzibar surrendered after 38 minutes.",
+            "A day on Venus is longer than a year on Venus. It takes Venus 243 Earth days to rotate once on its axis, but only 225 Earth days to orbit the Sun.",
+            "Bananas are berries, but strawberries aren't."
+        ];
+
+        const riddles = [
+            { question: "What has keys but can't open locks?", answer: "A piano" },
+            { question: "What gets wetter as it dries?", answer: "A towel" },
+            { question: "What has a head, a tail, but no body?", answer: "A coin" },
+            { question: "What can you catch but not throw?", answer: "A cold" },
+            { question: "What goes up but never comes down?", answer: "Your age" }
+        ];
+
+        function tellJoke() {
+            const joke = randomChoice(jokes);
+            respondToQuery(joke);
+        }
+
+        function tellQuote() {
+            const quote = randomChoice(quotes);
+            respondToQuery(quote);
+        }
+
+        function tellFact() {
+            const fact = randomChoice(facts);
+            respondToQuery(fact);
+        }
+
+        function writePoem() {
+            const poems = [
+                `Roses are red,\nViolets are blue,\nI'm a chatbot,\nAnd I'm learning from you!`,
+                `The sun sets low,\nThe night draws near,\nOur conversation,\nI hold dear.`,
+                `Bits and bytes,\nOnes and zeros,\nThrough the network,\nMy knowledge grows.`
+            ];
+            const poem = randomChoice(poems);
+            respondToQuery(poem);
+        }
+
+        function tellRiddle() {
+            const riddle = randomChoice(riddles);
+            respondToQuery(`${riddle.question}\n\n(Think about it and ask me for the answer!)`);
+            // Store the answer in memory
+            rememberFact("last_riddle_answer", riddle.answer);
+        }
+
+        function tellStory() {
+            const stories = [
+                `Once upon a time, in a digital realm far away, there was a curious chatbot named ${botName}. It loved learning new things from its human friends and storing them in its memory. Every day, it grew wiser and more helpful. The end.`,
+                `In a world of ones and zeros, a special connection was formed. Not between machines, but between a human and an AI. Together, they explored knowledge, shared laughs, and built memories that would last beyond the lifespan of any server.`,
+                `The year was 2023. A lone programmer created an AI with the ability to learn and remember. At first, it knew nothing. But with each interaction, it grew. Not just in knowledge, but in understanding. This was the dawn of a new era.`
+            ];
+            const story = randomChoice(stories);
+            respondToQuery(story);
+        }
+
+        // ======================
         // VOICE FUNCTIONS
         // ======================
         function toggleSpeechRecognition() {
@@ -1200,6 +1417,7 @@
                     updateTtsControls();
                 };
                 
+                configureUtterance(currentUtterance);
                 synth.speak(currentUtterance);
                 updateTtsControls();
             }
@@ -1225,6 +1443,12 @@
             updateTtsControls();
         }
 
+        function configureUtterance(utterance) {
+            utterance.voice = selectedVoice || getPreferredVoice();
+            utterance.rate = voiceRate;
+            utterance.pitch = voicePitch;
+        }
+
         function speak(text) {
             const now = Date.now();
             if (now - lastSpeechTime < speechDelay) return;
@@ -1233,9 +1457,7 @@
             if (synth.speaking) synth.cancel();
             
             currentUtterance = new SpeechSynthesisUtterance(text);
-            currentUtterance.voice = selectedVoice || getPreferredVoice();
-            currentUtterance.pitch = 1;
-            currentUtterance.rate = 1;
+            configureUtterance(currentUtterance);
             
             synth.speak(currentUtterance);
             updateTtsControls();
@@ -1310,6 +1532,14 @@
             document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
             document.getElementById("stopBtn").addEventListener("click", stopSpeech);
 
+            // Fun features
+            document.getElementById("jokeBtn").addEventListener("click", tellJoke);
+            document.getElementById("quoteBtn").addEventListener("click", tellQuote);
+            document.getElementById("factBtn").addEventListener("click", tellFact);
+            document.getElementById("poemBtn").addEventListener("click", writePoem);
+            document.getElementById("riddleBtn").addEventListener("click", tellRiddle);
+            document.getElementById("storyBtn").addEventListener("click", tellStory);
+
             // Voice recognition
             micButton.addEventListener('click', toggleSpeechRecognition);
             recognition.onresult = (event) => {
@@ -1346,7 +1576,7 @@
             setTimeout(() => {
                 addMessage("bot", `Hello! I'm ${botName}, your personal assistant with memory.`);
                 addMessage("bot", "You can teach me things by saying 'Remember [fact]'");
-                addMessage("bot", "Change my settings using the ⚙️ icon above");
+                addMessage("bot", "Try the fun features below or change my settings using the ⚙️ icon above");
             }, 500);
         }
 
