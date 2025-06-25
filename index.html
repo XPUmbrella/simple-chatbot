@@ -673,6 +673,25 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="settings-option">
+                <label for="preferredRegionSelect">Preferred Region/Accent:</label>
+                <select id="preferredRegionSelect">
+                    <option value="any">Any</option>
+                    <option value="en-GB">British English</option>
+                    <option value="en-US">American English</option>
+                    <option value="en-AU">Australian English</option>
+                    <option value="en-IE">Irish English</option>
+                    <option value="other-en">Other English</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <label for="preferredGenderSelect">Preferred Gender:</label>
+                <select id="preferredGenderSelect">
+                    <option value="any">Any</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -685,7 +704,6 @@
         <div class="date" id="fsDate"></div>
     </div>
 
-    <h1>Ultimate Learning Chatbot</h1>
     
     <div class="chat-container">
         <div class="chat-header">
@@ -804,8 +822,10 @@
         // Voice settings
         let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
         let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
-        let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
+        let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') !== 'false'; // Default true
         let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
+        let preferredRegion = localStorage.getItem('preferredRegion') || 'any';
+        let preferredGender = localStorage.getItem('preferredGender') || 'any';
 
 
         // ======================
@@ -887,6 +907,24 @@
                 speakUserMessagesOnSend = this.checked;
                 localStorage.setItem('speakUserMessagesOnSend', this.checked);
             });
+
+            // Preferred Region Select
+            const preferredRegionSelect = document.getElementById('preferredRegionSelect');
+            preferredRegionSelect.value = preferredRegion; // Set dropdown to stored value
+            preferredRegionSelect.addEventListener('change', function() {
+                preferredRegion = this.value;
+                localStorage.setItem('preferredRegion', preferredRegion);
+                populateVoiceList(); // Re-populate voice list based on new preference
+            });
+
+            // Preferred Gender Select
+            const preferredGenderSelect = document.getElementById('preferredGenderSelect');
+            preferredGenderSelect.value = preferredGender; // Set dropdown to stored value
+            preferredGenderSelect.addEventListener('change', function() {
+                preferredGender = this.value;
+                localStorage.setItem('preferredGender', preferredGender);
+                populateVoiceList(); // Re-populate voice list based on new preference
+            });
         }
 
         function updateDarkMode() {
@@ -900,72 +938,122 @@
 
         function populateVoiceList() {
             const voiceSelect = document.getElementById('voiceSelect');
-            voiceSelect.innerHTML = '';
-            
-            // Default option
+            const currentSelectedVoiceName = voiceSelect.value || localStorage.getItem('selectedVoice');
+            voiceSelect.innerHTML = ''; // Clear existing options
+
+            const voices = synth.getVoices();
+            if (voices.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'No voices available';
+                voiceSelect.appendChild(option);
+                return;
+            }
+
             const defaultOption = document.createElement('option');
-            defaultOption.textContent = 'Select a voice';
-            defaultOption.value = '';
+            defaultOption.textContent = 'Select a voice (default)';
+            defaultOption.value = ''; // Represents system default
             voiceSelect.appendChild(defaultOption);
 
-            // Get all available voices
-            const voices = synth.getVoices();
-            
-            // Try to find British voices first
-            const britishVoices = voices.filter(v => v.lang.includes('en-GB'));
-            const otherEnglishVoices = voices.filter(v => v.lang.includes('en-') && !v.lang.includes('en-GB'));
-            
-            // Add British voices first
-            if (britishVoices.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = 'British Voices';
-                britishVoices.forEach(voice => {
-                    const option = document.createElement('option');
-                    option.textContent = `${voice.name} (${voice.lang})`;
-                    option.value = voice.name;
-                    optgroup.appendChild(option);
-                    
-                    // Prefer British male voices
-                    if (voice.name.includes('Male') || voice.name.includes('George')) {
-                        option.selected = true;
-                        selectedVoice = voice;
+            const groupedVoices = {
+                preferred: [],
+                british: [],
+                american: [],
+                australian: [],
+                irish: [],
+                otherEnglish: [],
+                other: []
+            };
+
+            voices.forEach(voice => {
+                if (!voice.lang.startsWith('en-')) { // Only consider English voices for now, others go to 'other'
+                    groupedVoices.other.push(voice);
+                    return;
+                }
+
+                let regionGroup = 'otherEnglish';
+                if (voice.lang.toLowerCase().includes('gb')) regionGroup = 'british';
+                else if (voice.lang.toLowerCase().includes('us')) regionGroup = 'american';
+                else if (voice.lang.toLowerCase().includes('au')) regionGroup = 'australian';
+                else if (voice.lang.toLowerCase().includes('ie')) regionGroup = 'irish';
+
+                let matchesGender = true;
+                if (preferredGender !== 'any') {
+                    const nameLower = voice.name.toLowerCase();
+                    if (preferredGender === 'male') {
+                        matchesGender = nameLower.includes('male') || nameLower.includes('david') || nameLower.includes('mark') || nameLower.includes('george') || nameLower.includes('daniel');
+                    } else if (preferredGender === 'female') {
+                        matchesGender = nameLower.includes('female') || nameLower.includes('zira') || nameLower.includes('susan') || nameLower.includes('hazel');
                     }
-                });
-                voiceSelect.appendChild(optgroup);
+                }
+
+                let matchesRegion = true;
+                if (preferredRegion !== 'any' && preferredRegion !== 'other-en') {
+                    matchesRegion = voice.lang.toLowerCase().includes(preferredRegion.split('-')[1]); // e.g., 'gb' from 'en-GB'
+                } else if (preferredRegion === 'other-en') {
+                    matchesRegion = regionGroup === 'otherEnglish';
+                }
+
+
+                if (preferredRegion !== 'any' && matchesRegion && preferredGender !== 'any' && matchesGender) {
+                    groupedVoices.preferred.push(voice);
+                } else if (preferredRegion !== 'any' && matchesRegion && preferredGender === 'any') {
+                     groupedVoices.preferred.push(voice);
+                } else if (preferredGender !== 'any' && matchesGender && preferredRegion === 'any') {
+                     groupedVoices.preferred.push(voice);
+                }
+                else {
+                    groupedVoices[regionGroup].push(voice);
+                }
+            });
+
+            // De-duplicate preferred voices if they also fall into regional groups
+            // (simple approach: if it's in preferred, don't add again from regional)
+            const preferredNames = new Set(groupedVoices.preferred.map(v => v.name));
+
+            const addVoicesToSelect = (group, label) => {
+                const voicesToAdd = groupedVoices[group].filter(v => group === 'preferred' || !preferredNames.has(v.name));
+                if (voicesToAdd.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = label;
+                    voicesToAdd.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        option.value = voice.name;
+                        optgroup.appendChild(option);
+                    });
+                    voiceSelect.appendChild(optgroup);
+                }
+            };
+
+            if (groupedVoices.preferred.length > 0) {
+                 addVoicesToSelect('preferred', `Preferred (${preferredRegion !=='any' ? preferredRegion : ''} ${preferredGender !=='any' ? preferredGender : ''})`.trim());
             }
-            
-            // Add other English voices
-            if (otherEnglishVoices.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = 'Other English Voices';
-                otherEnglishVoices.forEach(voice => {
-                    const option = document.createElement('option');
-                    option.textContent = `${voice.name} (${voice.lang})`;
-                    option.value = voice.name;
-                    optgroup.appendChild(option);
-                });
-                voiceSelect.appendChild(optgroup);
+            addVoicesToSelect('british', 'British English Voices');
+            addVoicesToSelect('american', 'American English Voices');
+            addVoicesToSelect('australian', 'Australian English Voices');
+            addVoicesToSelect('irish', 'Irish English Voices');
+            addVoicesToSelect('otherEnglish', 'Other English Voices');
+            addVoicesToSelect('other', 'Other Language Voices');
+
+            // Restore previously selected voice or set a default
+            if (currentSelectedVoiceName && voices.find(v => v.name === currentSelectedVoiceName)) {
+                voiceSelect.value = currentSelectedVoiceName;
+            } else if (groupedVoices.preferred.length > 0) {
+                voiceSelect.value = groupedVoices.preferred[0].name;
+            } else if (groupedVoices.british.length > 0) {
+                voiceSelect.value = groupedVoices.british.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('george'))?.name || groupedVoices.british[0].name;
+            } else if (groupedVoices.american.length > 0) {
+                voiceSelect.value = groupedVoices.american[0].name;
+            } else if (voices.length > 0 && voiceSelect.options.length > 1) {
+                voiceSelect.value = voiceSelect.options[1].value; // First actual voice
             }
 
-            // After populating, try to set the saved voice
-            const savedVoiceName = localStorage.getItem('selectedVoice');
-            if (savedVoiceName) {
-                const allVoices = synth.getVoices(); // Get fresh list
-                const voiceToSelect = allVoices.find(v => v.name === savedVoiceName);
-                if (voiceToSelect) {
-                    voiceSelect.value = savedVoiceName;
-                    selectedVoice = voiceToSelect; // Update the global selectedVoice
-                } else {
-                    // If saved voice not found, clear the invalid entry
-                    localStorage.removeItem('selectedVoice');
-                    selectedVoice = null;
-                }
-            }
-            // If no saved voice or saved voice not found, and a default British Male was selected earlier,
-            // ensure 'selectedVoice' variable matches the dropdown.
-            if (!selectedVoice && voiceSelect.value) {
-                 const allVoices = synth.getVoices();
-                 selectedVoice = allVoices.find(v => v.name === voiceSelect.value);
+            // Update the global selectedVoice variable
+            selectedVoice = voices.find(v => v.name === voiceSelect.value) || null;
+            if (selectedVoice) {
+                localStorage.setItem('selectedVoice', selectedVoice.name);
+            } else {
+                localStorage.removeItem('selectedVoice'); // Clear if no valid voice is selected
             }
         }
 
@@ -1611,18 +1699,62 @@
 
         function getPreferredVoice() {
             const voices = synth.getVoices();
-            const preferredVoices = [
+            if (!voices || voices.length === 0) return null;
+
+            let candidates = voices.filter(v => v.lang.startsWith('en')); // Start with all English voices
+
+            // Filter by preferred region
+            if (preferredRegion !== 'any') {
+                const regionCodeToCheck = preferredRegion.toLowerCase(); // e.g., "en-gb"
+                let regionFiltered = [];
+                if (preferredRegion === 'other-en') {
+                    // For 'other-en', we need to find voices NOT matching common specific regions
+                    const commonRegions = ['en-gb', 'en-us', 'en-au', 'en-ie'];
+                    regionFiltered = candidates.filter(v => !commonRegions.some(cr => v.lang.toLowerCase().startsWith(cr)));
+                } else {
+                    regionFiltered = candidates.filter(v => v.lang.toLowerCase().startsWith(regionCodeToCheck));
+                     // Broader check for UK voices if specific en-GB not found and preferred is en-GB
+                    if (regionFiltered.length === 0 && regionCodeToCheck === 'en-gb') {
+                       regionFiltered = candidates.filter(v => v.lang.toLowerCase().includes('gb'));
+                    }
+                }
+                if (regionFiltered.length > 0) {
+                    candidates = regionFiltered;
+                }
+            }
+
+            // Filter by preferred gender
+            if (preferredGender !== 'any') {
+                const genderFiltered = candidates.filter(voice => {
+                    const nameLower = voice.name.toLowerCase();
+                    if (preferredGender === 'male') {
+                        return nameLower.includes('male') || nameLower.includes('david') || nameLower.includes('mark') || nameLower.includes('george') || nameLower.includes('daniel')  || nameLower.includes('guy') || nameLower.includes('man');
+                    } else if (preferredGender === 'female') {
+                        return nameLower.includes('female') || nameLower.includes('zira') || nameLower.includes('susan') || nameLower.includes('hazel') || nameLower.includes('woman') || nameLower.includes('girl');
+                    }
+                    return true;
+                });
+                if (genderFiltered.length > 0) {
+                    candidates = genderFiltered;
+                }
+            }
+
+            // If candidates matching preferences exist, return the first one
+            if (candidates.length > 0) return candidates[0];
+
+            // Fallback: Original list of specific preferred names if no candidates from filtering
+            const specificPreferredNames = [
                 'Google UK English Male',
                 'Microsoft George - English (United Kingdom)',
-                'Daniel'
+                'Daniel' // Often a good quality UK voice
             ];
-            
-            for (const voiceName of preferredVoices) {
-                const voice = voices.find(v => v.name === voiceName);
+            for (const voiceName of specificPreferredNames) {
+                const voice = voices.find(v => v.name === voiceName && v.lang.startsWith('en'));
                 if (voice) return voice;
             }
             
-            return voices.find(v => v.lang.includes('en')) || voices[0];
+            // Final fallback: any English voice, then any voice at all
+            return voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
         }
 
         function updateTtsControls() {
