@@ -410,6 +410,14 @@
             cursor: pointer;
         }
 
+        .close:hover {
+            color: black;
+        }
+
+        .dark-mode .close:hover {
+            color: white;
+        }
+
         .command-item {
             background-color: #f9f9f9;
             padding: 15px;
@@ -442,6 +450,10 @@
             align-items: center;
             justify-content: center;
             box-shadow: var(--shadow);
+        }
+
+        .settings-btn:hover {
+            transform: rotate(30deg);
         }
 
         .settings-panel {
@@ -627,8 +639,8 @@
 </head>
 <body>
     <div class="settings-menu">
-        <button class="settings-btn">⚙️</button>
-        <div class="settings-panel">
+        <button class="settings-btn" id="settingsBtn">⚙️</button>
+        <div class="settings-panel" id="settingsPanel">
             <h3>Settings</h3>
             <div class="settings-option">
                 <label for="botNameInput">Bot Name:</label>
@@ -688,7 +700,7 @@
     <h1>AI Chat Assistant</h1>
     
     <div class="chat-container">
-        <div class="chat-header">
+        <div class="chat-header" id="chatHeader">
             ChatBot Assistant
         </div>
         <div class="chat-box" id="chatBox">
@@ -786,6 +798,8 @@
         const memoryModal = document.getElementById('memoryModal');
         const memoryList = document.getElementById('memoryList');
         const fileInput = document.getElementById('fileInput');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
 
         // Initialize memory systems
         if (!localStorage.getItem('chatbotMemory')) {
@@ -815,9 +829,16 @@
 
         function initSettings() {
             // Toggle settings panel
-            document.querySelector('.settings-btn').addEventListener('click', function() {
-                const panel = document.querySelector('.settings-panel');
-                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            settingsBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent immediate closing
+                settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Close settings panel when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!settingsPanel.contains(e.target) {
+                    settingsPanel.style.display = 'none';
+                }
             });
 
             // Bot name setting
@@ -891,7 +912,7 @@
         }
 
         function updateChatHeader() {
-            document.querySelector('.chat-header').textContent = `${botName}`;
+            document.getElementById('chatHeader').textContent = `${botName}`;
         }
 
         function populateVoiceList() {
@@ -932,7 +953,7 @@
                         optgroup.appendChild(option);
                         
                         // Pre-select a high-quality voice if none is selected
-                        if (!selectedVoice && voice.name.includes('Natural') || voice.name.includes('Premium'))) {
+                        if (!selectedVoice && (voice.name.includes('Natural') || voice.name.includes('Premium'))) {
                             option.selected = true;
                             selectedVoice = voice;
                         }
