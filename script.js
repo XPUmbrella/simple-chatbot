@@ -474,12 +474,13 @@ function processMemoryCommand(message) {
     }
 
     // Case 2: User asks "What is my name?" or "What's my name?"
-    if (lowerMsg === "what is my name?" || lowerMsg === "what's my name?") {
+    // Making this check more robust.
+    if (lowerMsg.includes("what") && lowerMsg.includes("my name")) {
         const userName = recallFact("userName");
-        if (userName.startsWith("I don't remember")) {
-            respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
-        } else {
+        if (userName && !userName.startsWith("I don't remember")) { // Check if userName is truthy before startsWith
             respondToQuery(`Your name is ${userName}.`, true);
+        } else {
+            respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
         }
         return true;
     }
@@ -652,6 +653,38 @@ function generateResponse(message) {
         }
     }
 
+    // Word of the Day text command
+    if (lowerMsg.includes("word of the day")) {
+        // Need to call tellWordOfTheDay and make sure generateResponse doesn't also return a default.
+        // tellWordOfTheDay calls respondToQuery itself. So we can just return null or a special marker.
+        // However, the current structure expects generateResponse to return the string for respondToQuery.
+        // Let's make tellWordOfTheDay return the string instead of calling respondToQuery.
+
+        // Modification needed for tellWordOfTheDay:
+        // It should return the string, and respondToQuery(generateResponse(message)) will handle it.
+        // For now, let's assume tellWordOfTheDay is called and we prevent further processing here.
+        // This means processLearning and generateResponse might need slight refactoring later
+        // if we want functions called from within them to directly use respondToQuery.
+        // A simple way: call it, and then return a signal that it's handled.
+        // The `sendMessage` function structure is:
+        // if (!processMemoryCommand(message) && !processLearning(message)) {
+        //    const response = generateResponse(message); respondToQuery(response);
+        // }
+        // So, if generateResponse handles it, it should return a message.
+        // Let's adjust tellWordOfTheDay to return the string.
+
+        // We will adjust tellWordOfTheDay later. For now, let's just call it.
+        // This will result in two messages if not refactored, but let's set up the trigger.
+        // The ideal is that `generateResponse` returns the string.
+        // So, `tellWordOfTheDay` needs to be refactored to return its string.
+
+        // Temporary:
+        // tellWordOfTheDay();
+        // return "Fetching Word of the Day..."; // Placeholder, will be replaced by actual WOTD string
+        // This implies tellWordOfTheDay must be refactored. Let's do that as part of this step.
+        return getWordOfTheDayMessage(); // We'll create this helper that tellWordOfTheDay will also use.
+    }
+
     // Check if we're in a conversation context
     if (conversationContext.lastTopic === "weather") {
         if (lowerMsg.includes("yes") || lowerMsg.includes("location")) {
@@ -683,7 +716,7 @@ function generateResponse(message) {
         return randomChoice([
             `Hello there! I'm ${botName}. How can I help you today?`,
             `Hi! I'm ${botName}, ready to assist you.`,
-            `Greetings! You can teach me things by saying 'Remember my name is Alex'`
+            `Greetings! You can teach me your name by saying 'Remember my name is [Your Name]' or teach me facts with 'Remember [fact]'.`
         ]);
     }
 
@@ -815,8 +848,12 @@ function tellWordOfTheDay() {
         return;
     }
     const randomIndex = Math.floor(Math.random() * wordOfTheDayList.length);
-    constwotd = wordOfTheDayList[randomIndex];
-    respondToQuery(`Today's Word of the Day is: **${wotd.word}** - ${wotd.definition}`);
+    const wotd = wordOfTheDayList[randomIndex]; // Corrected variable name
+    return `Today's Word of the Day is: **${wotd.word}** - ${wotd.definition}`;
+}
+
+function tellWordOfTheDay() { // This function is now primarily for the button click
+    respondToQuery(getWordOfTheDayMessage());
 }
 
 // ======================
