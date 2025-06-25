@@ -45,6 +45,7 @@ let conversationContext = {
 // Voice settings
 let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
 let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
+let voiceVolume = parseFloat(localStorage.getItem('voiceVolume')) || 1;
 let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
 let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
 
@@ -109,6 +110,16 @@ function initSettings() {
         document.getElementById('pitchValue').textContent = voicePitch;
         localStorage.setItem('voicePitch', voicePitch);
     });
+
+            // Voice volume control
+            const voiceVolumeInput = document.getElementById('voiceVolume');
+            voiceVolumeInput.value = voiceVolume;
+            document.getElementById('volumeValue').textContent = voiceVolume;
+            voiceVolumeInput.addEventListener('input', function() {
+                voiceVolume = parseFloat(this.value);
+                document.getElementById('volumeValue').textContent = voiceVolume;
+                localStorage.setItem('voiceVolume', voiceVolume);
+            });
 
     // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
     // to ensure voices are loaded before selection.
@@ -357,7 +368,8 @@ function downloadMemories() {
         botName: botName,
         voice: selectedVoice ? selectedVoice.name : null,
         voiceRate: voiceRate,
-        voicePitch: voicePitch
+        voicePitch: voicePitch,
+        voiceVolume: voiceVolume // Added voiceVolume
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
@@ -416,6 +428,12 @@ function handleFileUpload(event) {
                 document.getElementById('voicePitch').value = voicePitch;
                 document.getElementById('pitchValue').textContent = voicePitch;
                 localStorage.setItem('voicePitch', voicePitch);
+            }
+            if (data.voiceVolume) { // Added section for voiceVolume
+                voiceVolume = parseFloat(data.voiceVolume);
+                document.getElementById('voiceVolume').value = voiceVolume;
+                document.getElementById('volumeValue').textContent = voiceVolume;
+                localStorage.setItem('voiceVolume', voiceVolume);
             }
 
             respondToQuery("Memories successfully uploaded from file!", true);
@@ -968,6 +986,7 @@ function configureUtterance(utterance) {
     }
     utterance.rate = voiceRate;
     utterance.pitch = voicePitch;
+    utterance.volume = voiceVolume;
 }
 
 function speak(text) {
