@@ -32,6 +32,9 @@ if (!localStorage.getItem('chatbotMemory')) {
 if (!localStorage.getItem('chatHistory')) {
     localStorage.setItem('chatHistory', JSON.stringify([]));
 }
+if (!localStorage.getItem('chatbotDefinitions')) {
+    localStorage.setItem('chatbotDefinitions', JSON.stringify({}));
+}
 
 // Conversation context
 let conversationContext = {
@@ -205,6 +208,31 @@ function populateVoiceList() {
          const allVoices = synth.getVoices();
          selectedVoice = allVoices.find(v => v.name === voiceSelect.value);
     }
+
+            // Add non-English voices if any
+            const nonEnglishVoices = voices.filter(v => !v.lang.startsWith('en-'));
+            if (nonEnglishVoices.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = 'Other Languages';
+                nonEnglishVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    option.value = voice.name;
+                    optgroup.appendChild(option);
+                });
+                voiceSelect.appendChild(optgroup);
+            }
+
+            // If after all this, nothing is selected but there are voices, select the first one.
+            if (!voiceSelect.value && voices.length > 0) {
+                voiceSelect.selectedIndex = 0; // Select the "Select a voice" default
+                // If a default like a British male was auto-selected, ensure selectedVoice var is updated
+                if (voiceSelect.options[voiceSelect.selectedIndex].value) {
+                     selectedVoice = voices.find(v => v.name === voiceSelect.options[voiceSelect.selectedIndex].value);
+                } else {
+                    selectedVoice = null; // No specific voice selected
+                }
+            }
 }
 
 // ======================
@@ -493,13 +521,50 @@ function processMemoryCommand(message) {
     return false;
 }
 
+function learnNewDefinition(word, definition) {
+    const definitions = JSON.parse(localStorage.getItem('chatbotDefinitions'));
+    definitions[word.toLowerCase()] = definition;
+    localStorage.setItem('chatbotDefinitions', JSON.stringify(definitions));
+    respondToQuery(`Okay, I've learned that "${word}" means "${definition}".`, true);
+}
+
 function processLearning(message) {
-    if (message.toLowerCase().includes("respond to")) {
+    const lowerMsg = message.toLowerCase();
+
+    // Pattern: "learn: [word] means [definition]"
+    let match = lowerMsg.match(/^learn:\s*([^]+?)\s*means\s*([^]+)$/i);
+    if (match) {
+        const word = match[1].trim();
+        const definition = match[2].trim();
+        learnNewDefinition(word, definition);
+        return true;
+    }
+
+    // Pattern: "define [word] as [definition]"
+    match = lowerMsg.match(/^define\s*([^]+?)\s*as\s*([^]+)$/i);
+    if (match) {
+        const word = match[1].trim();
+        const definition = match[2].trim();
+        learnNewDefinition(word, definition);
+        return true;
+    }
+
+    // Pattern: "remember the definition of [word] is [definition]"
+    match = lowerMsg.match(/^remember the definition of\s*([^]+?)\s*is\s*([^]+)$/i);
+    if (match) {
+        const word = match[1].trim();
+        const definition = match[2].trim();
+        learnNewDefinition(word, definition);
+        return true;
+    }
+
+    // Original learning logic (can be kept or refactored if it overlaps)
+    if (lowerMsg.includes("respond to")) {
         const parts = message.split("respond to").map(s => s.trim());
         if (parts.length === 2) {
             const [trigger, response] = parts[1].split("with").map(s => s.trim());
             if (trigger && response) {
-                learnNewResponse(trigger, response);
+                learnNewResponse(trigger, response); // This is the old general learning
                 return true;
             }
         }
@@ -574,6 +639,18 @@ function sendMessage() {
 
 function generateResponse(message) {
     const lowerMsg = message.toLowerCase();
+
+    // Definition recall
+    let match = lowerMsg.match(/^(what does|define|what is the definition of)\s*([^?]+)\??$/i);
+    if (match) {
+        const wordToDefine = match[2].trim().toLowerCase();
+        const definitions = JSON.parse(localStorage.getItem('chatbotDefinitions'));
+        if (definitions[wordToDefine]) {
+            return `"${wordToDefine}" means: ${definitions[wordToDefine]}.`;
+        } else {
+            return `I don't know the definition of "${wordToDefine}". You can teach me by saying "Learn: ${wordToDefine} means [definition]".`;
+        }
+    }
 
     // Check if we're in a conversation context
     if (conversationContext.lastTopic === "weather") {
@@ -717,6 +794,29 @@ function tellStory() {
     ];
     const story = randomChoice(stories);
     respondToQuery(story);
+}
+
+const wordOfTheDayList = [
+    { word: "ephemeral", definition: "Lasting for a very short time." },
+    { word: "ubiquitous", definition: "Present, appearing, or found everywhere." },
+    { word: "serendipity", definition: "The occurrence and development of events by chance in a happy or beneficial way." },
+    { word: "mellifluous", definition: "Pleasant and musical to hear." },
+    { word: " quintessential", definition: "Representing the most perfect or typical example of a quality or class." },
+    { word: "pernicious", definition: "Having a harmful effect, especially in a gradual or subtle way." },
+    { word: "eloquent", definition: "Fluent or persuasive in speaking or writing." },
+    { word: "fastidious", definition: "Very attentive to and concerned about accuracy and detail." },
+    { word: "gregarious", definition: "Fond of company; sociable." },
+    { word: "juxtaposition", definition: "The fact of two things being seen or placed close together with contrasting effect." }
+];
+
+function tellWordOfTheDay() {
+    if (wordOfTheDayList.length === 0) {
+        respondToQuery("I don't have any words for 'Word of the Day' right now.");
+        return;
+    }
+    const randomIndex = Math.floor(Math.random() * wordOfTheDayList.length);
+    constwotd = wordOfTheDayList[randomIndex];
+    respondToQuery(`Today's Word of the Day is: **${wotd.word}** - ${wotd.definition}`);
 }
 
 // ======================
@@ -917,6 +1017,7 @@ function init() {
     document.getElementById("poemBtn").addEventListener("click", writePoem);
     document.getElementById("riddleBtn").addEventListener("click", tellRiddle);
     document.getElementById("storyBtn").addEventListener("click", tellStory);
+            document.getElementById("wordOfTheDayBtn").addEventListener("click", tellWordOfTheDay);
 
     // Voice recognition
     micButton.addEventListener('click', toggleSpeechRecognition);
