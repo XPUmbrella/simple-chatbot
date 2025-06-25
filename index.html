@@ -659,6 +659,20 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="settings-option">
+                <label>Speak Bot Responses Automatically:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoSpeakBotToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-option">
+                <label>Speak My Messages on Send:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="speakUserMsgToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -714,7 +728,9 @@
             <div class="panel-title">Voice Controls</div>
         </div>
         <div class="tts-controls">
-            <button id="readBtn">🔊 Read Last</button>
+            <button id="readLastMessageBtn">🔊 Read Last Msg</button>
+            <button id="readMyLastBtn">🗣️ Read My Last</button>
+            <button id="readSelectedBtn">🔍 Read Selected</button>
             <button id="pauseBtn" disabled>⏸ Pause</button>
             <button id="resumeBtn" disabled>▶ Resume</button>
             <button id="stopBtn" disabled>⏹ Stop</button>
@@ -788,6 +804,9 @@
         // Voice settings
         let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
         let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
+        let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
+        let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
+
 
         // ======================
         // SETTINGS SYSTEM
@@ -850,16 +869,24 @@
                 localStorage.setItem('voicePitch', voicePitch);
             });
 
-            // Load saved voice if exists
-            const savedVoice = localStorage.getItem('selectedVoice');
-            if (savedVoice) {
-                setTimeout(() => {
-                    const voiceSelect = document.getElementById('voiceSelect');
-                    voiceSelect.value = savedVoice;
-                    const voices = synth.getVoices();
-                    selectedVoice = voices.find(v => v.name === savedVoice);
-                }, 500);
-            }
+            // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
+            // to ensure voices are loaded before selection.
+
+            // Auto Speak Bot Responses toggle
+            const autoSpeakBotToggle = document.getElementById('autoSpeakBotToggle');
+            autoSpeakBotToggle.checked = speakBotResponsesAutomatically;
+            autoSpeakBotToggle.addEventListener('change', function() {
+                speakBotResponsesAutomatically = this.checked;
+                localStorage.setItem('speakBotResponsesAutomatically', this.checked);
+            });
+
+            // Speak User Messages on Send toggle
+            const speakUserMsgToggle = document.getElementById('speakUserMsgToggle');
+            speakUserMsgToggle.checked = speakUserMessagesOnSend;
+            speakUserMsgToggle.addEventListener('change', function() {
+                speakUserMessagesOnSend = this.checked;
+                localStorage.setItem('speakUserMessagesOnSend', this.checked);
+            });
         }
 
         function updateDarkMode() {
@@ -918,6 +945,27 @@
                     optgroup.appendChild(option);
                 });
                 voiceSelect.appendChild(optgroup);
+            }
+
+            // After populating, try to set the saved voice
+            const savedVoiceName = localStorage.getItem('selectedVoice');
+            if (savedVoiceName) {
+                const allVoices = synth.getVoices(); // Get fresh list
+                const voiceToSelect = allVoices.find(v => v.name === savedVoiceName);
+                if (voiceToSelect) {
+                    voiceSelect.value = savedVoiceName;
+                    selectedVoice = voiceToSelect; // Update the global selectedVoice
+                } else {
+                    // If saved voice not found, clear the invalid entry
+                    localStorage.removeItem('selectedVoice');
+                    selectedVoice = null;
+                }
+            }
+            // If no saved voice or saved voice not found, and a default British Male was selected earlier,
+            // ensure 'selectedVoice' variable matches the dropdown.
+            if (!selectedVoice && voiceSelect.value) {
+                 const allVoices = synth.getVoices();
+                 selectedVoice = allVoices.find(v => v.name === voiceSelect.value);
             }
         }
 
@@ -1122,26 +1170,65 @@
         function processMemoryCommand(message) {
             const lowerMsg = message.toLowerCase();
             
-            // Case 1: User says "Remember [key] [value]"
             if (lowerMsg.startsWith("remember ")) {
-                const parts = message.split(" ").slice(1); // Skip "remember"
+                const content = message.substring("remember ".length).trim();
+
+                // Specific pattern: "my name is [Name]"
+                const nameIsPattern = /my name is (.+)/i;
+                const nameIsMatch = content.match(nameIsPattern);
+                if (nameIsMatch && nameIsMatch[1]) {
+                    rememberFact("userName", nameIsMatch[1].trim());
+                    return true;
+                }
+
+                // Specific pattern: "I am [Name]" (more general, could be context-dependent)
+                // For now, let's assume if it follows "remember", it's for the user's name.
+                const iAmPattern = /i am (.+)/i;
+                const iAmMatch = content.match(iAmPattern);
+                if (iAmMatch && iAmMatch[1]) {
+                    rememberFact("userName", iAmMatch[1].trim());
+                    return true;
+                }
+
+                // Generic "Remember [key] [value]"
+                const parts = content.split(" ");
                 if (parts.length >= 2) {
                     const key = parts[0];
                     const value = parts.slice(1).join(" ");
                     rememberFact(key, value);
                     return true;
+                } else if (parts.length === 1 && content.includes("=")) {
+                    // Support "remember key=value"
+                    const kv = content.split('=');
+                    if (kv.length === 2 && kv[0].trim() && kv[1].trim()) {
+                        rememberFact(kv[0].trim(), kv[1].trim());
+                        return true;
+                    }
                 }
             }
             
-            // Case 2: User says "Recall [key]"
-            if (lowerMsg.startsWith("recall ")) {
-                const key = message.split(" ")[1];
-                const value = recallFact(key);
-                respondToQuery(value, true);
+            // Case 2: User asks "What is my name?" or "What's my name?"
+            if (lowerMsg === "what is my name?" || lowerMsg === "what's my name?") {
+                const userName = recallFact("userName");
+                if (userName.startsWith("I don't remember")) {
+                    respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
+                } else {
+                    respondToQuery(`Your name is ${userName}.`, true);
+                }
                 return true;
             }
+
+            // Case 3: User says "Recall [key]"
+            if (lowerMsg.startsWith("recall ")) {
+                const key = message.substring("recall ".length).trim();
+                if (key) {
+                    const value = recallFact(key);
+                    respondToQuery(value, true);
+                    return true;
+                }
+            }
             
-            // Case 3: User asks "What do you know about X?"
+            // Case 4: User asks "What do you know about X?"
             if (lowerMsg.includes("what do you know about")) {
                 const keyword = message.split("about")[1].trim();
                 const memories = recallHistory(keyword);
@@ -1224,6 +1311,10 @@
             
             addMessage("user", message);
             userInput.value = '';
+
+            if (speakUserMessagesOnSend) {
+                speak(message); // Speak the user's message if the setting is on
+            }
             
             // Show typing indicator
             typingIndicator.style.display = 'flex';
@@ -1305,7 +1396,8 @@
         }
 
         function shouldSpeak() {
-            return true; // Always speak for this implementation
+            // This function now determines if bot responses should be spoken based on the setting
+            return speakBotResponsesAutomatically;
         }
 
         function randomChoice(array) {
@@ -1406,20 +1498,68 @@
             }
         }
 
-        function readLastMessage() {
+        function speakLastChatMessage() {
             stopSpeech();
-            
-            if (lastBotResponse) {
-                currentUtterance = new SpeechSynthesisUtterance(lastBotResponse);
+            const messages = chatBox.querySelectorAll('.message');
+            if (messages.length > 0) {
+                const lastMessageElement = messages[messages.length - 1];
+                let textToSpeak = lastMessageElement.textContent;
                 
+                // Simple cleaning: remove potential bot name prefix if present
+                if (textToSpeak.startsWith(botName + ": ")) {
+                    textToSpeak = textToSpeak.substring((botName + ": ").length);
+                }
+
+                if (textToSpeak) {
+                    currentUtterance = new SpeechSynthesisUtterance(textToSpeak);
+                    currentUtterance.onend = function() {
+                        currentUtterance = null;
+                        updateTtsControls();
+                    };
+                    configureUtterance(currentUtterance);
+                    synth.speak(currentUtterance);
+                    updateTtsControls();
+                }
+            } else {
+                speak("No messages in the chat to read.");
+            }
+        }
+
+        function speakUserLastMessage() {
+            stopSpeech();
+            const userMessages = chatBox.querySelectorAll('.user-message');
+            if (userMessages.length > 0) {
+                const lastUserMessageElement = userMessages[userMessages.length - 1];
+                const textToSpeak = lastUserMessageElement.textContent;
+                if (textToSpeak) {
+                    currentUtterance = new SpeechSynthesisUtterance(textToSpeak);
+                    currentUtterance.onend = function() {
+                        currentUtterance = null;
+                        updateTtsControls();
+                    };
+                    configureUtterance(currentUtterance);
+                    synth.speak(currentUtterance);
+                    updateTtsControls();
+                }
+            } else {
+                speak("You haven't sent any messages yet.");
+            }
+        }
+
+        function speakSelectedText() {
+            stopSpeech();
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText) {
+                currentUtterance = new SpeechSynthesisUtterance(selectedText);
                 currentUtterance.onend = function() {
                     currentUtterance = null;
                     updateTtsControls();
                 };
-                
                 configureUtterance(currentUtterance);
                 synth.speak(currentUtterance);
                 updateTtsControls();
+            } else {
+                speak("No text is currently selected.");
             }
         }
 
@@ -1444,7 +1584,13 @@
         }
 
         function configureUtterance(utterance) {
-            utterance.voice = selectedVoice || getPreferredVoice();
+            // Prioritize explicitly selected voice
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            } else {
+                // Fallback to preferred or any available English voice
+                utterance.voice = getPreferredVoice();
+            }
             utterance.rate = voiceRate;
             utterance.pitch = voicePitch;
         }
@@ -1498,20 +1644,12 @@
             // Load voices when they become available
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = function() {
-                    populateVoiceList();
-                    
-                    // Try to select the saved voice if it exists
-                    const savedVoice = localStorage.getItem('selectedVoice');
-                    if (savedVoice) {
-                        const voices = synth.getVoices();
-                        const voice = voices.find(v => v.name === savedVoice);
-                        if (voice) {
-                            document.getElementById('voiceSelect').value = savedVoice;
-                            selectedVoice = voice;
-                        }
-                    }
+                    populateVoiceList(); // This will now also attempt to load and set the saved voice
                 };
             }
+
+            // Initial population in case onvoiceschanged fired before listener was set
+            populateVoiceList();
 
             // Event Listeners
             sendButton.addEventListener('click', sendMessage);
@@ -1527,7 +1665,9 @@
             fileInput.addEventListener("change", handleFileUpload);
 
             // TTS controls
-            document.getElementById("readBtn").addEventListener("click", readLastMessage);
+            document.getElementById("readLastMessageBtn").addEventListener("click", speakLastChatMessage);
+            document.getElementById("readMyLastBtn").addEventListener("click", speakUserLastMessage);
+            document.getElementById("readSelectedBtn").addEventListener("click", speakSelectedText);
             document.getElementById("pauseBtn").addEventListener("click", pauseSpeech);
             document.getElementById("resumeBtn").addEventListener("click", resumeSpeech);
             document.getElementById("stopBtn").addEventListener("click", stopSpeech);
@@ -1572,12 +1712,15 @@
                 }
             });
 
-            // Add welcome message
-            setTimeout(() => {
-                addMessage("bot", `Hello! I'm ${botName}, your personal assistant with memory.`);
-                addMessage("bot", "You can teach me things by saying 'Remember [fact]'");
-                addMessage("bot", "Try the fun features below or change my settings using the ⚙️ icon above");
-            }, 500);
+            // Add welcome message only if chat history is very new or empty
+            const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            if (history.length < 3) { // Heuristic: if less than 3 messages, assume it's a fresh start
+                setTimeout(() => {
+                    addMessage("bot", `Hello! I'm ${botName}, your personal assistant with memory.`);
+                    addMessage("bot", "You can teach me things by saying 'Remember [fact]' or 'Remember my name is [Your Name]'.");
+                    addMessage("bot", "Try the fun features below or change my settings using the ⚙️ icon above!");
+                }, 500);
+            }
         }
 
         // Make functions available globally
