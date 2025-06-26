@@ -58,7 +58,7 @@ let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') ==
 // SETTINGS SYSTEM
 // ======================
 let botName = localStorage.getItem('botName') || "Assistant";
-let selectedVoice = null;
+let selectedVoice = null; // This will store the SpeechSynthesisVoice OBJECT
 
 function initSettings() {
     // Toggle settings panel
@@ -89,12 +89,17 @@ function initSettings() {
     });
 
     // Voice selection
-    populateVoiceList();
+    populateVoiceList(); // Call this to initially populate and set voice
     document.getElementById('voiceSelect').addEventListener('change', function() {
         const voiceName = this.value;
-        const voices = synth.getVoices();
-        selectedVoice = voices.find(v => v.name === voiceName);
-        localStorage.setItem('selectedVoice', voiceName);
+        if (voiceName) {
+            const voices = synth.getVoices();
+            selectedVoice = voices.find(v => v.name === voiceName); // Set global selectedVoice object
+            localStorage.setItem('selectedVoice', voiceName); // Store the name
+        } else {
+            selectedVoice = null; // "Select a voice" chosen
+            localStorage.removeItem('selectedVoice');
+        }
     });
 
     // Voice rate control
@@ -116,9 +121,6 @@ function initSettings() {
         document.getElementById('pitchValue').textContent = voicePitch;
         localStorage.setItem('voicePitch', voicePitch);
     });
-
-    // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
-    // to ensure voices are loaded before selection.
 
     // Auto Speak Bot Responses toggle
     const autoSpeakBotToggle = document.getElementById('autoSpeakBotToggle');
@@ -143,27 +145,33 @@ function updateDarkMode() {
 }
 
 function updateChatHeader() {
-    document.querySelector('.chat-header #chatBotName').textContent = `${botName}`; // Updated selector
+    document.querySelector('.chat-header #chatBotName').textContent = `${botName}`;
 }
 
 function populateVoiceList() {
     const voiceSelect = document.getElementById('voiceSelect');
-    voiceSelect.innerHTML = '';
+    const currentVoices = synth.getVoices(); 
 
-    // Default option
+    if (currentVoices.length === 0) {
+        // console.log("No voices loaded yet, will retry on voiceschanged or timeout.");
+        // If onvoiceschanged is not reliable, a timeout retry might be needed here for some browsers.
+        return; 
+    }
+    
+    const previouslySelectedNameInDropdown = voiceSelect.value; 
+    voiceSelect.innerHTML = ''; 
+
     const defaultOption = document.createElement('option');
     defaultOption.textContent = 'Select a voice';
     defaultOption.value = '';
     voiceSelect.appendChild(defaultOption);
 
-    // Get all available voices
-    const voices = synth.getVoices();
+    const britishVoices = currentVoices.filter(v => v.lang.includes('en-GB'));
+    const otherEnglishVoices = currentVoices.filter(v => v.lang.includes('en-') && !v.lang.includes('en-GB'));
+    const nonEnglishVoices = currentVoices.filter(v => !v.lang.startsWith('en-'));
 
-    // Try to find British voices first
-    const britishVoices = voices.filter(v => v.lang.includes('en-GB'));
-    const otherEnglishVoices = voices.filter(v => v.lang.includes('en-') && !v.lang.includes('en-GB'));
+    let preferredDefaultVoiceName = null; // Store the name of the preferred default
 
-    // Add British voices first
     if (britishVoices.length > 0) {
         const optgroup = document.createElement('optgroup');
         optgroup.label = 'British Voices';
@@ -172,17 +180,13 @@ function populateVoiceList() {
             option.textContent = `${voice.name} (${voice.lang})`;
             option.value = voice.name;
             optgroup.appendChild(option);
-
-            // Prefer British male voices
-            if (voice.name.includes('Male') || voice.name.includes('George')) {
-                option.selected = true;
-                selectedVoice = voice;
+            if (!preferredDefaultVoiceName && (voice.name.includes('Male') || voice.name.includes('George'))) {
+                preferredDefaultVoiceName = voice.name; // Mark as potential default
             }
         });
         voiceSelect.appendChild(optgroup);
     }
 
-    // Add other English voices
     if (otherEnglishVoices.length > 0) {
         const optgroup = document.createElement('optgroup');
         optgroup.label = 'Other English Voices';
@@ -191,48 +195,13 @@ function populateVoiceList() {
             option.textContent = `${voice.name} (${voice.lang})`;
             option.value = voice.name;
             optgroup.appendChild(option);
+            if (!preferredDefaultVoiceName) { // Fallback if no British preferred
+                 preferredDefaultVoiceName = voice.name;
+            }
         });
         voiceSelect.appendChild(optgroup);
     }
-
-    // After populating standard groups, attempt to load and validate saved voice
-    const savedVoiceName = localStorage.getItem('selectedVoice');
-    let successfullyAppliedSavedVoice = false;
-
-    if (savedVoiceName) {
-        const allAvailableVoices = synth.getVoices(); // Get current full list
-        const foundVoiceObject = allAvailableVoices.find(v => v.name === savedVoiceName);
-
-        if (foundVoiceObject) {
-            // Valid saved voice found
-            voiceSelect.value = savedVoiceName;
-            selectedVoice = foundVoiceObject; // Set global selectedVoice object
-            successfullyAppliedSavedVoice = true;
-            // console.log("Applied saved voice:", savedVoiceName);
-        } else {
-            // Saved voice name is invalid or no longer available
-            localStorage.removeItem('selectedVoice');
-            selectedVoice = null; // Ensure global selectedVoice object is nulled
-            // console.log("Removed invalid saved voice:", savedVoiceName);
-        }
-    }
-
-    // If no valid saved voice was applied, and if no default was set by British preference,
-    // try to ensure *something* sensible is selected in the dropdown if possible,
-    // or that selectedVoice is null if "Select a voice" is chosen.
-    if (!successfullyAppliedSavedVoice && !voiceSelect.value && britishVoices.length === 0 && otherEnglishVoices.length > 0) {
-        // If no British voices set a default, and no saved voice, but other English voices exist,
-        // select the first "Other English" voice as a fallback.
-        const firstOtherEnglish = otherEnglishVoices[0];
-        if (firstOtherEnglish) {
-            voiceSelect.value = firstOtherEnglish.name;
-            // selectedVoice will be updated by the final sync below.
-            // console.log("Defaulting to first Other English voice:", firstOtherEnglish.name);
-        }
-    }
     
-    // Add non-English voices if any
-    const nonEnglishVoices = voices.filter(v => !v.lang.startsWith('en-'));
     if (nonEnglishVoices.length > 0) {
         const optgroup = document.createElement('optgroup');
         optgroup.label = 'Other Languages';
@@ -244,31 +213,54 @@ function populateVoiceList() {
         });
         voiceSelect.appendChild(optgroup);
     }
-    
-    // Final Synchronization: Ensure global selectedVoice object matches the actual dropdown value
-    // This is the ultimate source of truth for `selectedVoice` after all population and default/saved logic.
-    const currentDropdownValue = voiceSelect.value;
-    if (currentDropdownValue) {
-        const allVoices = synth.getVoices(); // Get fresh list
-        const finalVoiceObject = allVoices.find(v => v.name === currentDropdownValue);
-        if (finalVoiceObject) {
-            selectedVoice = finalVoiceObject;
-            // console.log("Final selected voice object:", selectedVoice);
+
+    // Attempt to apply a previously selected valid voice from localStorage
+    const savedVoiceName = localStorage.getItem('selectedVoice');
+    let appliedSavedVoice = false;
+    if (savedVoiceName) {
+        const foundVoiceObject = currentVoices.find(v => v.name === savedVoiceName);
+        if (foundVoiceObject) {
+            voiceSelect.value = savedVoiceName; // Set dropdown to the valid saved voice
+            appliedSavedVoice = true;
         } else {
-            // This case means the dropdown has a value that doesn't match any known voice.
-            // This might happen if "Select a voice" (with value="") is somehow still selected
-            // or if a voice disappeared dynamically (very rare).
-            selectedVoice = null;
-            localStorage.removeItem('selectedVoice'); // Remove potentially problematic stored name
-            // console.warn("Dropdown value did not match any available voice. Resetting selectedVoice.");
+            localStorage.removeItem('selectedVoice'); // Remove invalid/outdated stored name
+        }
+    }
+
+    // If no valid saved voice was applied, apply the preferred default (if any)
+    if (!appliedSavedVoice && preferredDefaultVoiceName) {
+        const hasPreferredDefaultInList = Array.from(voiceSelect.options).some(opt => opt.value === preferredDefaultVoiceName);
+        if (hasPreferredDefaultInList) {
+            voiceSelect.value = preferredDefaultVoiceName;
+        }
+    }
+    
+    // If after all that, the dropdown is still on "Select a voice" (value=""),
+    // but there was a previously selected value in the dropdown (e.g. browser default), try to restore it.
+    // This handles cases where localStorage was cleared or had an invalid voice.
+    if (!voiceSelect.value && previouslySelectedNameInDropdown) {
+         const voiceExists = currentVoices.some(v => v.name === previouslySelectedNameInDropdown);
+         if(voiceExists) {
+            voiceSelect.value = previouslySelectedNameInDropdown;
+         }
+    }
+    
+    // Final Synchronization: Set the global selectedVoice object based on the dropdown's final state.
+    const finalSelectedNameInDropdown = voiceSelect.value;
+    if (finalSelectedNameInDropdown) {
+        selectedVoice = currentVoices.find(v => v.name === finalSelectedNameInDropdown);
+        // If the current dropdown value led to a valid voice object,
+        // ensure it's what's in localStorage (especially if it came from a default).
+        if (selectedVoice && localStorage.getItem('selectedVoice') !== finalSelectedNameInDropdown) {
+            localStorage.setItem('selectedVoice', finalSelectedNameInDropdown);
         }
     } else {
-        // Dropdown has no value (e.g., "Select a voice" is selected, which has value="")
+        // No valid voice is selected (e.g., "Select a voice" is the actual selection)
         selectedVoice = null;
-        localStorage.removeItem('selectedVoice'); // Ensure no voice name is stored if none is selected
-        // console.log("No voice selected in dropdown. Setting selectedVoice to null.");
+        localStorage.removeItem('selectedVoice'); // Ensure nothing is stored if "Select a voice"
     }
 }
+
 
 // ======================
 // DIGITAL CLOCK FUNCTIONS
@@ -474,12 +466,9 @@ function handleFileUpload(event) {
                 document.getElementById('botNameInput').value = botName;
                 updateChatHeader();
             }
-            if (data.voice) {
-                const voiceSelect = document.getElementById('voiceSelect');
-                voiceSelect.value = data.voice;
-                const voices = synth.getVoices();
-                selectedVoice = voices.find(v => v.name === data.voice);
-                localStorage.setItem('selectedVoice', data.voice);
+            if (data.voice) { // This is a voice NAME (string)
+                localStorage.setItem('selectedVoice', data.voice); // Save the name
+                populateVoiceList(); // Repopulate and re-evaluate selection based on new saved name
             }
             if (data.voiceRate) {
                 voiceRate = parseFloat(data.voiceRate);
@@ -762,18 +751,25 @@ function generateResponse(message) {
 
     // Check if we're in a conversation context
     if (conversationContext.lastTopic === "weather") {
-        if (lowerMsg.includes("yes") || lowerMsg.includes("location")) {
+        if (lastBotResponse === "Please tell me which location you're interested in." || lastBotResponse === "You asked about weather. Want details for a specific location?") {
+            const location = message.trim();
+            conversationContext.lastEntities.location = location;
+            conversationContext.lastTopic = null; 
+            return `Weather in ${location}: sunny, 22°C. (Simulated)`;
+        }
+        if (lowerMsg.includes("yes") || lowerMsg.includes("location") || lowerMsg.includes("please")) {
             return "Please tell me which location you're interested in.";
         }
         if (lowerMsg.includes("in ")) {
-            const location = message.split("in ")[1];
+            const location = message.split("in ")[1].trim();
             conversationContext.lastEntities.location = location;
-            return `Weather in ${location}: sunny, 22°C.`; // Simplified
+            conversationContext.lastTopic = null; 
+            return `Weather in ${location}: sunny, 22°C. (Simulated)`;
         }
     }
 
     // Detect new topics
-    if (lowerMsg.includes("weather")) {
+    if (lowerMsg.includes("weather") && conversationContext.lastTopic !== "weather") {
         conversationContext.lastTopic = "weather";
         return "You asked about weather. Want details for a specific location?";
     }
@@ -943,16 +939,21 @@ function tellWordOfTheDay() { // This function is now specifically for the butto
 function toggleSpeechRecognition() {
     if (isListening) {
         recognition.stop();
-        micButton.classList.remove('listening');
-        statusElement.textContent = "";
-        isListening = false;
+        // UI updates will be handled by recognition.onend or recognition.onerror
     } else {
-        recognition.start();
-        micButton.classList.add('listening');
-        statusElement.textContent = "Listening... Speak now";
-        isListening = true;
+        try {
+            recognition.start();
+            micButton.classList.add('listening');
+            statusElement.textContent = "Listening... Speak now";
+            isListening = true;
+            checkAchievement('speechCommander'); 
+        } catch (e) {
+            console.error("Error starting speech recognition:", e);
+            statusElement.textContent = "Mic error. Try again.";
+            isListening = false;
+            micButton.classList.remove('listening');
+        }
     }
-    checkAchievement('speechCommander'); // Trigger achievement
 }
 
 function speakLastChatMessage() {
@@ -1048,7 +1049,7 @@ function stopSpeech() {
 
 function configureUtterance(utterance) {
     // Prioritize explicitly selected voice
-    if (selectedVoice) {
+    if (selectedVoice && selectedVoice instanceof SpeechSynthesisVoice) { // Check if it's a valid voice object
         utterance.voice = selectedVoice;
     } else {
         // Fallback to preferred or any available English voice
@@ -1056,16 +1057,26 @@ function configureUtterance(utterance) {
     }
     utterance.rate = voiceRate;
     utterance.pitch = voicePitch;
+    // utterance.volume = voiceVolume; // Add this if/when volume control is re-integrated
 }
 
 function speak(text) {
     const now = Date.now();
-    if (now - lastSpeechTime < speechDelay) return;
+    if (now - lastSpeechTime < speechDelay && currentUtterance) return; // Allow override if no current utterance
     lastSpeechTime = now;
 
-    if (synth.speaking) synth.cancel();
+    if (synth.speaking) synth.cancel(); // Cancel current before speaking new
 
     currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.onend = () => { // Ensure currentUtterance is nulled on end
+        currentUtterance = null;
+        updateTtsControls();
+    };
+    currentUtterance.onerror = (event) => { // Handle speech errors
+        console.error("Speech synthesis error:", event.error);
+        currentUtterance = null;
+        updateTtsControls();
+    };
     configureUtterance(currentUtterance);
 
     synth.speak(currentUtterance);
@@ -1074,18 +1085,28 @@ function speak(text) {
 
 function getPreferredVoice() {
     const voices = synth.getVoices();
+    if (voices.length === 0) return null; // No voices available
+
     const preferredVoices = [
         'Google UK English Male',
         'Microsoft George - English (United Kingdom)',
-        'Daniel'
+        'Daniel' // Common macOS UK English voice
     ];
 
     for (const voiceName of preferredVoices) {
         const voice = voices.find(v => v.name === voiceName);
         if (voice) return voice;
     }
+    
+    // Fallback to any UK English voice
+    const ukVoice = voices.find(v => v.lang === 'en-GB');
+    if (ukVoice) return ukVoice;
 
-    return voices.find(v => v.lang.includes('en')) || voices[0];
+    // Fallback to any English voice
+    const enVoice = voices.find(v => v.lang.startsWith('en-'));
+    if (enVoice) return enVoice;
+    
+    return voices[0]; // Absolute fallback to the first available voice
 }
 
 function updateTtsControls() {
@@ -1094,7 +1115,7 @@ function updateTtsControls() {
 
     document.getElementById("pauseBtn").disabled = !isSpeaking || isPaused;
     document.getElementById("resumeBtn").disabled = !isPaused;
-    document.getElementById("stopBtn").disabled = !isSpeaking;
+    document.getElementById("stopBtn").disabled = !isSpeaking && !isPaused; // Enable stop if not speaking but was paused
 }
 
 // ======================
@@ -1280,17 +1301,25 @@ function initializeAchievements() {
         // Ensure new achievements are added without resetting old progress
         defaultAchievements.forEach(defaultAch => {
             if (!achievements.some(ach => ach.id === defaultAch.id)) {
-                achievements.push(defaultAch);
+                achievements.push(JSON.parse(JSON.stringify(defaultAch))); // Add a deep copy of new defaults
+            } else { // If achievement exists, ensure its properties are up-to-date with default (except current/earned)
+                const existingAch = achievements.find(ach => ach.id === defaultAch.id);
+                existingAch.name = defaultAch.name;
+                existingAch.description = defaultAch.description;
+                existingAch.icon = defaultAch.icon;
+                existingAch.threshold = defaultAch.threshold;
+                existingAch.type = defaultAch.type;
             }
         });
-        // Filter out any removed achievements if necessary (optional, but good for cleanup)
+        // Filter out any achievements that are no longer in defaultAchievements (optional, but good for cleanup)
         achievements = achievements.filter(ach => defaultAchievements.some(defaultAch => defaultAch.id === ach.id));
 
     } else {
-        achievements = JSON.parse(JSON.stringify(defaultAchievements)); // Deep copy
+        achievements = JSON.parse(JSON.stringify(defaultAchievements)); // Deep copy for initial setup
     }
     saveAchievements();
 }
+
 
 function saveAchievements() {
     localStorage.setItem('chatbotAchievements', JSON.stringify(achievements));
@@ -1302,7 +1331,14 @@ function displayAchievements() {
 
     achievementListDiv.innerHTML = ''; // Clear previous display
 
-    achievements.forEach(ach => {
+    // Sort achievements: earned first, then by name
+    const sortedAchievements = [...achievements].sort((a, b) => {
+        if (a.earned && !b.earned) return -1;
+        if (!a.earned && b.earned) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    sortedAchievements.forEach(ach => {
         const achItem = document.createElement('div');
         achItem.classList.add('achievement-item');
         if (ach.earned) {
@@ -1310,8 +1346,8 @@ function displayAchievements() {
         }
 
         let progressBarHtml = '';
-        if (ach.type === 'count') {
-            const progressPercentage = (ach.current / ach.threshold) * 100;
+        if (ach.type === 'count' && ach.threshold > 0) { // Ensure threshold is positive
+            const progressPercentage = Math.min((ach.current / ach.threshold) * 100, 100); // Cap at 100%
             progressBarHtml = `
                 <div class="achievement-progress">
                     <div class="achievement-progress-bar" style="width: ${progressPercentage}%;"></div>
@@ -1337,7 +1373,7 @@ function checkAchievement(id) {
             achievement.earned = true;
             showAchievementNotification(achievement.name);
             saveAchievements();
-            displayAchievements();
+            displayAchievements(); // Update display after earning
         }
         // Count-based achievements are handled by incrementAchievementProgress
     }
@@ -1345,16 +1381,17 @@ function checkAchievement(id) {
 
 function incrementAchievementProgress(id) {
     const achievement = achievements.find(ach => ach.id === id);
-    if (achievement && !achievement.earned && achievement.type === 'count') {
-        achievement.current++;
+    if (achievement && achievement.type === 'count' && !achievement.earned) { // Only increment if not already earned
+        achievement.current = (achievement.current || 0) + 1; // Ensure current is a number
         if (achievement.current >= achievement.threshold) {
             achievement.earned = true;
             showAchievementNotification(achievement.name);
         }
         saveAchievements();
-        displayAchievements();
+        displayAchievements(); // Update display after progress
     }
 }
+
 
 function showAchievementNotification(achievementName) {
     const notificationDiv = document.createElement('div');
@@ -1371,37 +1408,52 @@ function showAchievementNotification(achievementName) {
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         z-index: 1000;
         opacity: 0;
-        animation: slideInUp 0.5s forwards, fadeOut 3s 2s forwards;
+        animation: slideInUpToast 0.5s forwards, fadeOutToast 0.5s 2.5s forwards;
     `;
     notificationDiv.textContent = `🏆 Achievement Unlocked: ${achievementName}!`;
     document.body.appendChild(notificationDiv);
 
     // Add keyframe styles for notification if not already present
-    const styleSheet = document.styleSheets[0];
     // Check if the rules already exist to prevent adding duplicates
-    const rules = [...styleSheet.cssRules].map(rule => rule.cssText || rule.name);
-
-    if (!rules.some(ruleText => ruleText.includes('@keyframes slideInUp'))) {
-        styleSheet.insertRule(`
-            @keyframes slideInUp {
+    let styleSheet = document.getElementById('chatbot-dynamic-styles');
+    if (!styleSheet) {
+        styleSheet = document.createElement('style');
+        styleSheet.id = 'chatbot-dynamic-styles';
+        document.head.appendChild(styleSheet);
+    }
+    
+    const keyframes = {
+        slideInUpToast: `
+            @keyframes slideInUpToast {
                 from { opacity: 0; transform: translate(-50%, 50px); }
                 to { opacity: 1; transform: translate(-50%, 0); }
+            }`,
+        fadeOutToast: `
+            @keyframes fadeOutToast {
+                from { opacity: 1; transform: translate(-50%, 0); }
+                to { opacity: 0; transform: translate(-50%, -20px); }
+            }`
+    };
+
+    for (const [name, rule] of Object.entries(keyframes)) {
+        let ruleExists = false;
+        for (let i = 0; i < styleSheet.sheet.cssRules.length; i++) {
+            if (styleSheet.sheet.cssRules[i].name === name) {
+                ruleExists = true;
+                break;
             }
-        `, styleSheet.cssRules.length);
-    }
-    if (!rules.some(ruleText => ruleText.includes('@keyframes fadeOut'))) {
-        styleSheet.insertRule(`
-            @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-        `, styleSheet.cssRules.length);
+        }
+        if (!ruleExists) {
+            styleSheet.sheet.insertRule(rule, styleSheet.sheet.cssRules.length);
+        }
     }
 
 
     setTimeout(() => {
-        notificationDiv.remove();
-    }, 5000); // Remove after 5 seconds
+        if (notificationDiv.parentNode) { // Check if still in DOM
+            notificationDiv.remove();
+        }
+    }, 3000); // Remove after 3 seconds (0.5s slide in + 2.5s visible/fade out)
 }
 
 
@@ -1415,13 +1467,14 @@ function init() {
 
     // Load voices when they become available
     if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = function() {
-            populateVoiceList(); // This will now also attempt to load and set the saved voice
-        };
+        speechSynthesis.onvoiceschanged = populateVoiceList; // Directly assign
     }
 
-    // Initial population in case onvoiceschanged fired before listener was set
-    populateVoiceList();
+    // Initial population in case onvoiceschanged fired before listener was set or not supported
+    // Also, some browsers (like Chrome on Android) might need a slight delay for voices to be available
+    setTimeout(populateVoiceList, 100); // Try after a small delay
+    populateVoiceList(); // Try immediately
+
 
     // Event Listeners
     sendButton.addEventListener('click', sendMessage);
@@ -1442,7 +1495,7 @@ function init() {
         tabAchievements.classList.remove('active');
         memoriesContent.style.display = 'block';
         achievementsContent.style.display = 'none';
-        showAllMemories(); // Re-render memories just in case
+        showAllMemories(); 
     });
 
     tabAchievements.addEventListener('click', () => {
@@ -1450,7 +1503,7 @@ function init() {
         tabMemories.classList.remove('active');
         memoriesContent.style.display = 'none';
         achievementsContent.style.display = 'block';
-        displayAchievements(); // Re-render achievements just in case
+        displayAchievements(); 
     });
 
 
@@ -1479,15 +1532,30 @@ function init() {
         sendMessage();
     };
     recognition.onerror = (event) => {
-        statusElement.textContent = `Error: ${event.error}`;
+        statusElement.textContent = `Error: ${event.error}. Mic off.`;
+        console.error("Speech recognition error:", event.error);
+        isListening = false; // Ensure listening stops on error
         micButton.classList.remove('listening');
-        isListening = false;
     };
     recognition.onend = () => {
-        if (isListening) recognition.start();
-        else {
+        if (isListening) {
+            // If isListening is still true, it means recognition ended unexpectedly
+            // (e.g., timeout, but user hasn't clicked stop). Try to restart.
+            try {
+                recognition.start();
+                // micButton should still have 'listening' class
+                // statusElement should still say "Listening..."
+            } catch (e) {
+                // If restart fails, then properly stop.
+                console.error("Error restarting speech recognition:", e);
+                micButton.classList.remove('listening');
+                statusElement.textContent = "Mic off. Click to start.";
+                isListening = false;
+            }
+        } else {
+            // If isListening is false, it means user clicked the button to stop, or an error stopped it.
             micButton.classList.remove('listening');
-            statusElement.textContent = "";
+            statusElement.textContent = "Mic off. Click to start.";
         }
     };
 
