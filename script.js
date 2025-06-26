@@ -24,6 +24,11 @@ const typingIndicator = document.getElementById('typing-indicator');
 const memoryModal = document.getElementById('memoryModal');
 const memoryList = document.getElementById('memoryList');
 const fileInput = document.getElementById('fileInput');
+const tabMemories = document.getElementById('tabMemories');
+const tabAchievements = document.getElementById('tabAchievements');
+const memoriesContent = document.getElementById('memoriesContent');
+const achievementsContent = document.getElementById('achievementsContent');
+
 
 // Initialize memory systems
 if (!localStorage.getItem('chatbotMemory')) {
@@ -45,7 +50,6 @@ let conversationContext = {
 // Voice settings
 let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
 let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
-let voiceVolume = parseFloat(localStorage.getItem('voiceVolume')) || 1;
 let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
 let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
 
@@ -80,6 +84,8 @@ function initSettings() {
     darkModeToggle.addEventListener('change', function() {
         localStorage.setItem('darkMode', this.checked);
         updateDarkMode();
+        // Achievement trigger for Dark Mode
+        checkAchievement('darkKnight');
     });
 
     // Voice selection
@@ -111,16 +117,6 @@ function initSettings() {
         localStorage.setItem('voicePitch', voicePitch);
     });
 
-            // Voice volume control
-            const voiceVolumeInput = document.getElementById('voiceVolume');
-            voiceVolumeInput.value = voiceVolume;
-            document.getElementById('volumeValue').textContent = voiceVolume;
-            voiceVolumeInput.addEventListener('input', function() {
-                voiceVolume = parseFloat(this.value);
-                document.getElementById('volumeValue').textContent = voiceVolume;
-                localStorage.setItem('voiceVolume', voiceVolume);
-            });
-
     // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
     // to ensure voices are loaded before selection.
 
@@ -147,7 +143,7 @@ function updateDarkMode() {
 }
 
 function updateChatHeader() {
-    document.querySelector('.chat-header').textContent = `${botName}`;
+    document.querySelector('.chat-header #chatBotName').textContent = `${botName}`; // Updated selector
 }
 
 function populateVoiceList() {
@@ -244,22 +240,6 @@ function populateVoiceList() {
                     selectedVoice = null; // No specific voice selected
                 }
             }
-
-            // Final check: Ensure global selectedVoice object matches the actual dropdown value
-            if (voiceSelect.value) {
-                const allVoices = synth.getVoices(); // Get fresh list again
-                const currentlySelectedVoiceObject = allVoices.find(v => v.name === voiceSelect.value);
-                if (currentlySelectedVoiceObject) {
-                    selectedVoice = currentlySelectedVoiceObject;
-                } else {
-                    // This case should ideally not happen if the dropdown is populated correctly
-                    // and value corresponds to a real voice name.
-                    selectedVoice = null;
-                    // console.warn("Selected voice in dropdown not found in synth.getVoices(). This is unexpected.");
-                }
-            } else {
-                selectedVoice = null; // No voice is selected in the dropdown
-            }
 }
 
 // ======================
@@ -310,6 +290,8 @@ function rememberFact(key, value) {
 
     // Also save to history
     saveToHistory("system", `Remembered: ${key} = ${value}`);
+    // Achievement trigger for memory usage
+    checkAchievement('memoryMaster');
 }
 
 function recallFact(key) {
@@ -352,7 +334,13 @@ function showAllMemories() {
         }
     }
     memoryModal.style.display = 'flex';
+    // Ensure the correct tab content is visible when opening
+    tabMemories.classList.add('active');
+    tabAchievements.classList.remove('active');
+    memoriesContent.style.display = 'block';
+    achievementsContent.style.display = 'none';
 }
+
 
 function deleteMemory(key) {
     const memory = JSON.parse(localStorage.getItem('chatbotMemory'));
@@ -363,10 +351,14 @@ function deleteMemory(key) {
 }
 
 function clearAllMemories() {
-    if (confirm("Are you sure you want to clear ALL memories?")) {
+    if (confirm("Are you sure you want to clear ALL memories? This will reset achievement progress too!")) {
         localStorage.setItem('chatbotMemory', JSON.stringify({}));
         localStorage.setItem('chatHistory', JSON.stringify([]));
-        respondToQuery("All memories have been cleared.", true);
+        localStorage.setItem('chatbotDefinitions', JSON.stringify({}));
+        // Reset achievements on clear all memories for a fresh start
+        initializeAchievements(); // Re-initialize to default state
+        displayAchievements(); // Update display
+        respondToQuery("All memories and achievements have been cleared.", true);
     }
 }
 
@@ -376,16 +368,22 @@ function clearAllMemories() {
 function downloadMemories() {
     const memory = JSON.parse(localStorage.getItem('chatbotMemory') || '{}');
     const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+    const definitions = JSON.parse(localStorage.getItem('chatbotDefinitions') || '{}');
+    const achievementsData = JSON.parse(localStorage.getItem('chatbotAchievements') || '[]');
 
     const data = {
         memory: memory,
         history: history,
+        definitions: definitions, // Include definitions
+        achievements: achievementsData, // Include achievements
         exportedAt: new Date().toISOString(),
         botName: botName,
         voice: selectedVoice ? selectedVoice.name : null,
         voiceRate: voiceRate,
         voicePitch: voicePitch,
-        voiceVolume: voiceVolume // Added voiceVolume
+        darkMode: localStorage.getItem('darkMode') || 'false',
+        speakBotResponsesAutomatically: localStorage.getItem('speakBotResponsesAutomatically') || 'false',
+        speakUserMessagesOnSend: localStorage.getItem('speakUserMessagesOnSend') || 'false'
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
@@ -399,6 +397,7 @@ function downloadMemories() {
     URL.revokeObjectURL(url);
 
     respondToQuery("Memories downloaded as JSON file.", true);
+    checkAchievement('memoryMaster'); // Trigger achievement for download
 }
 
 function uploadMemories() {
@@ -420,6 +419,27 @@ function handleFileUpload(event) {
             if (data.history) {
                 localStorage.setItem('chatHistory', JSON.stringify(data.history));
             }
+            if (data.definitions) { // Import definitions
+                localStorage.setItem('chatbotDefinitions', JSON.stringify(data.definitions));
+            }
+            if (data.achievements) { // Import achievements
+                // Merge imported achievements, don't overwrite if existing progress is higher
+                const importedAchievements = data.achievements;
+                achievements.forEach(localAch => {
+                    const importedAch = importedAchievements.find(ia => ia.id === localAch.id);
+                    if (importedAch) {
+                        if (importedAch.earned) {
+                            localAch.earned = true;
+                        }
+                        if (importedAch.type === 'count' && importedAch.current > localAch.current) {
+                            localAch.current = importedAch.current;
+                        }
+                    }
+                });
+                saveAchievements(); // Save the merged state
+                displayAchievements(); // Update display
+            }
+
             if (data.botName) {
                 botName = data.botName;
                 localStorage.setItem('botName', botName);
@@ -445,15 +465,26 @@ function handleFileUpload(event) {
                 document.getElementById('pitchValue').textContent = voicePitch;
                 localStorage.setItem('voicePitch', voicePitch);
             }
-            if (data.voiceVolume) { // Added section for voiceVolume
-                voiceVolume = parseFloat(data.voiceVolume);
-                document.getElementById('voiceVolume').value = voiceVolume;
-                document.getElementById('volumeValue').textContent = voiceVolume;
-                localStorage.setItem('voiceVolume', voiceVolume);
+            if (data.darkMode !== undefined) {
+                localStorage.setItem('darkMode', data.darkMode);
+                document.getElementById('darkModeToggle').checked = data.darkMode === 'true';
+                updateDarkMode();
             }
+            if (data.speakBotResponsesAutomatically !== undefined) {
+                localStorage.setItem('speakBotResponsesAutomatically', data.speakBotResponsesAutomatically);
+                document.getElementById('autoSpeakBotToggle').checked = data.speakBotResponsesAutomatically === 'true';
+                speakBotResponsesAutomatically = data.speakBotResponsesAutomatically === 'true';
+            }
+            if (data.speakUserMessagesOnSend !== undefined) {
+                localStorage.setItem('speakUserMessagesOnSend', data.speakUserMessagesOnSend);
+                document.getElementById('speakUserMsgToggle').checked = data.speakUserMessagesOnSend === 'true';
+                speakUserMessagesOnSend = data.speakUserMessagesOnSend === 'true';
+            }
+
 
             respondToQuery("Memories successfully uploaded from file!", true);
             showAllMemories();
+            checkAchievement('memoryMaster'); // Trigger achievement for upload
         } catch (error) {
             respondToQuery("Error: Invalid memory file format.", true);
             console.error("File upload error:", error);
@@ -512,7 +543,7 @@ function processMemoryCommand(message) {
     if (lowerMsg.includes("what") && lowerMsg.includes("my name")) {
         const userName = recallFact("userName");
         if (userName && !userName.startsWith("I don't remember")) { // Check if userName is truthy before startsWith
-            respondToQuery(`Your name is ${userName}.`, false); // Changed to false
+            respondToQuery(`Your name is ${userName}.`, true);
         } else {
             respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
         }
@@ -561,6 +592,7 @@ function learnNewDefinition(word, definition) {
     definitions[word.toLowerCase()] = definition;
     localStorage.setItem('chatbotDefinitions', JSON.stringify(definitions));
     respondToQuery(`Okay, I've learned that "${word}" means "${definition}".`, true);
+    checkAchievement('definitionLearner');
 }
 
 function processLearning(message) {
@@ -650,6 +682,13 @@ function sendMessage() {
     addMessage("user", message);
     userInput.value = '';
 
+    // Achievement trigger: First Message and Message Count
+    incrementAchievementProgress('firstMessage');
+    incrementAchievementProgress('talkativeUser');
+    if (message.toLowerCase().includes('?')) {
+        incrementAchievementProgress('curiosityExplorer');
+    }
+
     if (speakUserMessagesOnSend) {
         speak(message); // Speak the user's message if the setting is on
     }
@@ -681,6 +720,7 @@ function generateResponse(message) {
         const wordToDefine = match[2].trim().toLowerCase();
         const definitions = JSON.parse(localStorage.getItem('chatbotDefinitions'));
         if (definitions[wordToDefine]) {
+            checkAchievement('definitionSeeker'); // Trigger achievement for recalling definition
             return `"${wordToDefine}" means: ${definitions[wordToDefine]}.`;
         } else {
             return `I don't know the definition of "${wordToDefine}". You can teach me by saying "Learn: ${wordToDefine} means [definition]".`;
@@ -689,34 +729,7 @@ function generateResponse(message) {
 
     // Word of the Day text command
     if (lowerMsg.includes("word of the day")) {
-        // Need to call tellWordOfTheDay and make sure generateResponse doesn't also return a default.
-        // tellWordOfTheDay calls respondToQuery itself. So we can just return null or a special marker.
-        // However, the current structure expects generateResponse to return the string for respondToQuery.
-        // Let's make tellWordOfTheDay return the string instead of calling respondToQuery.
-
-        // Modification needed for tellWordOfTheDay:
-        // It should return the string, and respondToQuery(generateResponse(message)) will handle it.
-        // For now, let's assume tellWordOfTheDay is called and we prevent further processing here.
-        // This means processLearning and generateResponse might need slight refactoring later
-        // if we want functions called from within them to directly use respondToQuery.
-        // A simple way: call it, and then return a signal that it's handled.
-        // The `sendMessage` function structure is:
-        // if (!processMemoryCommand(message) && !processLearning(message)) {
-        //    const response = generateResponse(message); respondToQuery(response);
-        // }
-        // So, if generateResponse handles it, it should return a message.
-        // Let's adjust tellWordOfTheDay to return the string.
-
-        // We will adjust tellWordOfTheDay later. For now, let's just call it.
-        // This will result in two messages if not refactored, but let's set up the trigger.
-        // The ideal is that `generateResponse` returns the string.
-        // So, `tellWordOfTheDay` needs to be refactored to return its string.
-
-        // Temporary:
-        // tellWordOfTheDay();
-        // return "Fetching Word of the Day..."; // Placeholder, will be replaced by actual WOTD string
-        // This implies tellWordOfTheDay must be refactored. Let's do that as part of this step.
-        return getWordOfTheDayMessage(); // We'll create this helper that tellWordOfTheDay will also use.
+        return getWordOfTheDayMessage();
     }
 
     // Check if we're in a conversation context
@@ -824,16 +837,19 @@ const riddles = [
 function tellJoke() {
     const joke = randomChoice(jokes);
     respondToQuery(joke);
+    incrementAchievementProgress('jokeEnthusiast');
 }
 
 function tellQuote() {
     const quote = randomChoice(quotes);
     respondToQuery(quote);
+    incrementAchievementProgress('quoteCollector');
 }
 
 function tellFact() {
     const fact = randomChoice(facts);
     respondToQuery(fact);
+    incrementAchievementProgress('factFinder');
 }
 
 function writePoem() {
@@ -844,13 +860,15 @@ function writePoem() {
     ];
     const poem = randomChoice(poems);
     respondToQuery(poem);
+    checkAchievement('poeticSoul');
 }
 
 function tellRiddle() {
     const riddle = randomChoice(riddles);
     respondToQuery(`${riddle.question}\n\n(Think about it and ask me for the answer!)`);
     // Store the answer in memory
-    rememberFact("last_riddle_answer", riddle.answer);
+    rememberFact("last_riddle_answer", riddle.answer); // This also triggers memoryMaster achievement
+    incrementAchievementProgress('riddleMaster');
 }
 
 function tellStory() {
@@ -861,6 +879,7 @@ function tellStory() {
     ];
     const story = randomChoice(stories);
     respondToQuery(story);
+    checkAchievement('storyTeller');
 }
 
 const wordOfTheDayList = [
@@ -868,7 +887,7 @@ const wordOfTheDayList = [
     { word: "ubiquitous", definition: "Present, appearing, or found everywhere." },
     { word: "serendipity", definition: "The occurrence and development of events by chance in a happy or beneficial way." },
     { word: "mellifluous", definition: "Pleasant and musical to hear." },
-    { word: " quintessential", definition: "Representing the most perfect or typical example of a quality or class." },
+    { word: "quintessential", definition: "Representing the most perfect or typical example of a quality or class." },
     { word: "pernicious", definition: "Having a harmful effect, especially in a gradual or subtle way." },
     { word: "eloquent", definition: "Fluent or persuasive in speaking or writing." },
     { word: "fastidious", definition: "Very attentive to and concerned about accuracy and detail." },
@@ -876,17 +895,17 @@ const wordOfTheDayList = [
     { word: "juxtaposition", definition: "The fact of two things being seen or placed close together with contrasting effect." }
 ];
 
-function tellWordOfTheDay() {
+function getWordOfTheDayMessage() { // Renamed to avoid confusion with the event handler
     if (wordOfTheDayList.length === 0) {
-        respondToQuery("I don't have any words for 'Word of the Day' right now.");
-        return;
+        return "I don't have any words for 'Word of the Day' right now.";
     }
     const randomIndex = Math.floor(Math.random() * wordOfTheDayList.length);
-    const wotd = wordOfTheDayList[randomIndex]; // Corrected variable name
+    const wotd = wordOfTheDayList[randomIndex];
+    incrementAchievementProgress('wordWizard'); // Trigger achievement for multiple uses
     return `Today's Word of the Day is: **${wotd.word}** - ${wotd.definition}`;
 }
 
-function tellWordOfTheDay() { // This function is now primarily for the button click
+function tellWordOfTheDay() { // This function is now specifically for the button click
     respondToQuery(getWordOfTheDayMessage());
 }
 
@@ -905,6 +924,7 @@ function toggleSpeechRecognition() {
         statusElement.textContent = "Listening... Speak now";
         isListening = true;
     }
+    checkAchievement('speechCommander'); // Trigger achievement
 }
 
 function speakLastChatMessage() {
@@ -928,6 +948,7 @@ function speakLastChatMessage() {
             configureUtterance(currentUtterance);
             synth.speak(currentUtterance);
             updateTtsControls();
+            checkAchievement('botListener'); // Trigger achievement
         }
     } else {
         speak("No messages in the chat to read.");
@@ -949,6 +970,7 @@ function speakUserLastMessage() {
             configureUtterance(currentUtterance);
             synth.speak(currentUtterance);
             updateTtsControls();
+            checkAchievement('selfListener'); // Trigger achievement
         }
     } else {
         speak("You haven't sent any messages yet.");
@@ -967,6 +989,7 @@ function speakSelectedText() {
         configureUtterance(currentUtterance);
         synth.speak(currentUtterance);
         updateTtsControls();
+        checkAchievement('selectiveSpeaker'); // Trigger achievement
     } else {
         speak("No text is currently selected.");
     }
@@ -976,6 +999,7 @@ function pauseSpeech() {
     if (synth.speaking) {
         synth.pause();
         updateTtsControls();
+        checkAchievement('voiceController'); // Trigger achievement
     }
 }
 
@@ -983,6 +1007,7 @@ function resumeSpeech() {
     if (synth.paused) {
         synth.resume();
         updateTtsControls();
+        checkAchievement('voiceController'); // Trigger achievement
     }
 }
 
@@ -990,6 +1015,7 @@ function stopSpeech() {
     synth.cancel();
     currentUtterance = null;
     updateTtsControls();
+    checkAchievement('voiceController'); // Trigger achievement
 }
 
 function configureUtterance(utterance) {
@@ -1002,7 +1028,6 @@ function configureUtterance(utterance) {
     }
     utterance.rate = voiceRate;
     utterance.pitch = voicePitch;
-    utterance.volume = voiceVolume;
 }
 
 function speak(text) {
@@ -1045,9 +1070,318 @@ function updateTtsControls() {
 }
 
 // ======================
+// ACHIEVEMENT SYSTEM
+// ======================
+let achievements = []; // This will hold the current state of achievements
+
+const defaultAchievements = [
+    {
+        id: 'firstMessage',
+        name: 'First Word',
+        description: 'Send your very first message to the chatbot.',
+        icon: '💬',
+        threshold: 1,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'talkativeUser',
+        name: 'Chatty Cathy',
+        description: 'Send 50 messages to the chatbot.',
+        icon: '🗣️',
+        threshold: 50,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'curiosityExplorer',
+        name: 'Curiosity Explorer',
+        description: 'Ask 10 questions (messages containing "?") to the chatbot.',
+        icon: '❓',
+        threshold: 10,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'darkKnight',
+        name: 'Dark Knight',
+        description: 'Activate dark mode.',
+        icon: '🌙',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'memoryMaster',
+        name: 'Memory Master',
+        description: 'Use the memory features (remember, recall, download, upload).',
+        icon: '🧠',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'jokeEnthusiast',
+        name: 'Laugh Generator',
+        description: 'Ask the chatbot for 5 jokes.',
+        icon: '😂',
+        threshold: 5,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'quoteCollector',
+        name: 'Words of Wisdom',
+        description: 'Get 5 random quotes from the chatbot.',
+        icon: '💬',
+        threshold: 5,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'factFinder',
+        name: 'Fact Fanatic',
+        description: 'Discover 5 interesting facts from the chatbot.',
+        icon: '💡',
+        threshold: 5,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'poeticSoul',
+        name: 'Poetic Soul',
+        description: 'Ask the chatbot to write a poem.',
+        icon: '✍️',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'riddleMaster',
+        name: 'Riddle Solver',
+        description: 'Ask the chatbot for 3 riddles.', // Simplified to asking, not solving
+        icon: '🤔',
+        threshold: 3,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'storyTeller',
+        name: 'Narrative Navigator',
+        description: 'Ask the chatbot for a short story.',
+        icon: '📖',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'wordWizard',
+        name: 'Word Wizard',
+        description: 'Get the Word of the Day 3 times.',
+        icon: '✨',
+        threshold: 3,
+        current: 0,
+        earned: false,
+        type: 'count'
+    },
+    {
+        id: 'speechCommander',
+        name: 'Voice Commander', // Renamed for better fit
+        description: 'Use the microphone to send a message.',
+        icon: '🎙️',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'botListener',
+        name: 'Bot Listener',
+        description: 'Use "Read Last Msg" feature.',
+        icon: '🔊',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'selfListener',
+        name: 'Self-Reflector',
+        description: 'Use "Read My Last" message feature.',
+        icon: '🗣️',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'selectiveSpeaker',
+        name: 'Selective Speaker',
+        description: 'Use "Read Selected" text feature.',
+        icon: '🔍',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'voiceController',
+        name: 'Audio Manager',
+        description: 'Use speech pause/resume/stop controls.',
+        icon: '▶️',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'definitionLearner',
+        name: 'New Lexicon',
+        description: 'Teach the chatbot a new definition.',
+        icon: '📚',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'definitionSeeker',
+        name: 'Word Explorer',
+        description: 'Ask the chatbot for a definition it knows.',
+        icon: '📖',
+        earned: false,
+        type: 'boolean'
+    }
+];
+
+function initializeAchievements() {
+    const savedAchievements = localStorage.getItem('chatbotAchievements');
+    if (savedAchievements) {
+        achievements = JSON.parse(savedAchievements);
+        // Ensure new achievements are added without resetting old progress
+        defaultAchievements.forEach(defaultAch => {
+            if (!achievements.some(ach => ach.id === defaultAch.id)) {
+                achievements.push(defaultAch);
+            }
+        });
+        // Filter out any removed achievements if necessary (optional, but good for cleanup)
+        achievements = achievements.filter(ach => defaultAchievements.some(defaultAch => defaultAch.id === ach.id));
+
+    } else {
+        achievements = JSON.parse(JSON.stringify(defaultAchievements)); // Deep copy
+    }
+    saveAchievements();
+}
+
+function saveAchievements() {
+    localStorage.setItem('chatbotAchievements', JSON.stringify(achievements));
+}
+
+function displayAchievements() {
+    const achievementListDiv = document.getElementById('achievementList');
+    if (!achievementListDiv) return; // Ensure the element exists
+
+    achievementListDiv.innerHTML = ''; // Clear previous display
+
+    achievements.forEach(ach => {
+        const achItem = document.createElement('div');
+        achItem.classList.add('achievement-item');
+        if (ach.earned) {
+            achItem.classList.add('earned');
+        }
+
+        let progressBarHtml = '';
+        if (ach.type === 'count') {
+            const progressPercentage = (ach.current / ach.threshold) * 100;
+            progressBarHtml = `
+                <div class="achievement-progress">
+                    <div class="achievement-progress-bar" style="width: ${progressPercentage}%;"></div>
+                </div>
+                <small>${ach.current}/${ach.threshold}</small>
+            `;
+        }
+
+        achItem.innerHTML = `
+            <div class="achievement-icon">${ach.icon}</div>
+            <h4>${ach.name}</h4>
+            <p>${ach.description}</p>
+            ${progressBarHtml}
+        `;
+        achievementListDiv.appendChild(achItem);
+    });
+}
+
+function checkAchievement(id) {
+    const achievement = achievements.find(ach => ach.id === id);
+    if (achievement && !achievement.earned) {
+        if (achievement.type === 'boolean') {
+            achievement.earned = true;
+            showAchievementNotification(achievement.name);
+            saveAchievements();
+            displayAchievements();
+        }
+        // Count-based achievements are handled by incrementAchievementProgress
+    }
+}
+
+function incrementAchievementProgress(id) {
+    const achievement = achievements.find(ach => ach.id === id);
+    if (achievement && !achievement.earned && achievement.type === 'count') {
+        achievement.current++;
+        if (achievement.current >= achievement.threshold) {
+            achievement.earned = true;
+            showAchievementNotification(achievement.name);
+        }
+        saveAchievements();
+        displayAchievements();
+    }
+}
+
+function showAchievementNotification(achievementName) {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.classList.add('system-message'); // Re-use system message style for now
+    notificationDiv.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--info);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 1000;
+        opacity: 0;
+        animation: slideInUp 0.5s forwards, fadeOut 3s 2s forwards;
+    `;
+    notificationDiv.textContent = `🏆 Achievement Unlocked: ${achievementName}!`;
+    document.body.appendChild(notificationDiv);
+
+    // Add keyframe styles for notification if not already present
+    const styleSheet = document.styleSheets[0];
+    // Check if the rules already exist to prevent adding duplicates
+    const rules = [...styleSheet.cssRules].map(rule => rule.cssText || rule.name);
+
+    if (!rules.some(ruleText => ruleText.includes('@keyframes slideInUp'))) {
+        styleSheet.insertRule(`
+            @keyframes slideInUp {
+                from { opacity: 0; transform: translate(-50%, 50px); }
+                to { opacity: 1; transform: translate(-50%, 0); }
+            }
+        `, styleSheet.cssRules.length);
+    }
+    if (!rules.some(ruleText => ruleText.includes('@keyframes fadeOut'))) {
+        styleSheet.insertRule(`
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `, styleSheet.cssRules.length);
+    }
+
+
+    setTimeout(() => {
+        notificationDiv.remove();
+    }, 5000); // Remove after 5 seconds
+}
+
+
+// ======================
 // INITIALIZATION
 // ======================
 function init() {
+    initializeAchievements(); // Initialize achievements FIRST
     initSettings();
     updateChatHeader();
 
@@ -1074,6 +1408,24 @@ function init() {
     document.getElementById("clearMemoryBtn").addEventListener("click", clearAllMemories);
     fileInput.addEventListener("change", handleFileUpload);
 
+    // Modal tab switching
+    tabMemories.addEventListener('click', () => {
+        tabMemories.classList.add('active');
+        tabAchievements.classList.remove('active');
+        memoriesContent.style.display = 'block';
+        achievementsContent.style.display = 'none';
+        showAllMemories(); // Re-render memories just in case
+    });
+
+    tabAchievements.addEventListener('click', () => {
+        tabAchievements.classList.add('active');
+        tabMemories.classList.remove('active');
+        memoriesContent.style.display = 'none';
+        achievementsContent.style.display = 'block';
+        displayAchievements(); // Re-render achievements just in case
+    });
+
+
     // TTS controls
     document.getElementById("readLastMessageBtn").addEventListener("click", speakLastChatMessage);
     document.getElementById("readMyLastBtn").addEventListener("click", speakUserLastMessage);
@@ -1089,7 +1441,7 @@ function init() {
     document.getElementById("poemBtn").addEventListener("click", writePoem);
     document.getElementById("riddleBtn").addEventListener("click", tellRiddle);
     document.getElementById("storyBtn").addEventListener("click", tellStory);
-            document.getElementById("wordOfTheDayBtn").addEventListener("click", tellWordOfTheDay);
+    document.getElementById("wordOfTheDayBtn").addEventListener("click", tellWordOfTheDay);
 
     // Voice recognition
     micButton.addEventListener('click', toggleSpeechRecognition);
@@ -1123,13 +1475,16 @@ function init() {
         }
     });
 
+    // Display achievements on load
+    displayAchievements();
+
     // Add welcome message only if chat history is very new or empty
     const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
     if (history.length < 3) { // Heuristic: if less than 3 messages, assume it's a fresh start
         setTimeout(() => {
             addMessage("bot", `Hello! I'm ${botName}, your personal assistant with memory.`);
             addMessage("bot", "You can teach me things by saying 'Remember [fact]' or 'Remember my name is [Your Name]'.");
-            addMessage("bot", "Try the fun features below or change my settings using the ⚙️ icon above!");
+            addMessage("bot", "Try the fun features below or change my settings using the ⚙️ icon above! Also, check out your achievements!");
         }, 500);
     }
 }
