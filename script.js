@@ -1,4 +1,3 @@
-
 // ======================
 // CORE SETUP
 // ======================
@@ -196,51 +195,79 @@ function populateVoiceList() {
         voiceSelect.appendChild(optgroup);
     }
 
-    // After populating, try to set the saved voice
+    // After populating standard groups, attempt to load and validate saved voice
     const savedVoiceName = localStorage.getItem('selectedVoice');
+    let successfullyAppliedSavedVoice = false;
+
     if (savedVoiceName) {
-        const allVoices = synth.getVoices(); // Get fresh list
-        const voiceToSelect = allVoices.find(v => v.name === savedVoiceName);
-        if (voiceToSelect) {
+        const allAvailableVoices = synth.getVoices(); // Get current full list
+        const foundVoiceObject = allAvailableVoices.find(v => v.name === savedVoiceName);
+
+        if (foundVoiceObject) {
+            // Valid saved voice found
             voiceSelect.value = savedVoiceName;
-            selectedVoice = voiceToSelect; // Update the global selectedVoice
+            selectedVoice = foundVoiceObject; // Set global selectedVoice object
+            successfullyAppliedSavedVoice = true;
+            // console.log("Applied saved voice:", savedVoiceName);
         } else {
-            // If saved voice not found, clear the invalid entry
+            // Saved voice name is invalid or no longer available
             localStorage.removeItem('selectedVoice');
-            selectedVoice = null;
+            selectedVoice = null; // Ensure global selectedVoice object is nulled
+            // console.log("Removed invalid saved voice:", savedVoiceName);
         }
     }
-    // If no saved voice or saved voice not found, and a default British Male was selected earlier,
-    // ensure 'selectedVoice' variable matches the dropdown.
-    if (!selectedVoice && voiceSelect.value) {
-         const allVoices = synth.getVoices();
-         selectedVoice = allVoices.find(v => v.name === voiceSelect.value);
+
+    // If no valid saved voice was applied, and if no default was set by British preference,
+    // try to ensure *something* sensible is selected in the dropdown if possible,
+    // or that selectedVoice is null if "Select a voice" is chosen.
+    if (!successfullyAppliedSavedVoice && !voiceSelect.value && britishVoices.length === 0 && otherEnglishVoices.length > 0) {
+        // If no British voices set a default, and no saved voice, but other English voices exist,
+        // select the first "Other English" voice as a fallback.
+        const firstOtherEnglish = otherEnglishVoices[0];
+        if (firstOtherEnglish) {
+            voiceSelect.value = firstOtherEnglish.name;
+            // selectedVoice will be updated by the final sync below.
+            // console.log("Defaulting to first Other English voice:", firstOtherEnglish.name);
+        }
     }
-
-            // Add non-English voices if any
-            const nonEnglishVoices = voices.filter(v => !v.lang.startsWith('en-'));
-            if (nonEnglishVoices.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = 'Other Languages';
-                nonEnglishVoices.forEach(voice => {
-                    const option = document.createElement('option');
-                    option.textContent = `${voice.name} (${voice.lang})`;
-                    option.value = voice.name;
-                    optgroup.appendChild(option);
-                });
-                voiceSelect.appendChild(optgroup);
-            }
-
-            // If after all this, nothing is selected but there are voices, select the first one.
-            if (!voiceSelect.value && voices.length > 0) {
-                voiceSelect.selectedIndex = 0; // Select the "Select a voice" default
-                // If a default like a British male was auto-selected, ensure selectedVoice var is updated
-                if (voiceSelect.options[voiceSelect.selectedIndex].value) {
-                     selectedVoice = voices.find(v => v.name === voiceSelect.options[voiceSelect.selectedIndex].value);
-                } else {
-                    selectedVoice = null; // No specific voice selected
-                }
-            }
+    
+    // Add non-English voices if any
+    const nonEnglishVoices = voices.filter(v => !v.lang.startsWith('en-'));
+    if (nonEnglishVoices.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = 'Other Languages';
+        nonEnglishVoices.forEach(voice => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.value = voice.name;
+            optgroup.appendChild(option);
+        });
+        voiceSelect.appendChild(optgroup);
+    }
+    
+    // Final Synchronization: Ensure global selectedVoice object matches the actual dropdown value
+    // This is the ultimate source of truth for `selectedVoice` after all population and default/saved logic.
+    const currentDropdownValue = voiceSelect.value;
+    if (currentDropdownValue) {
+        const allVoices = synth.getVoices(); // Get fresh list
+        const finalVoiceObject = allVoices.find(v => v.name === currentDropdownValue);
+        if (finalVoiceObject) {
+            selectedVoice = finalVoiceObject;
+            // console.log("Final selected voice object:", selectedVoice);
+        } else {
+            // This case means the dropdown has a value that doesn't match any known voice.
+            // This might happen if "Select a voice" (with value="") is somehow still selected
+            // or if a voice disappeared dynamically (very rare).
+            selectedVoice = null;
+            localStorage.removeItem('selectedVoice'); // Remove potentially problematic stored name
+            // console.warn("Dropdown value did not match any available voice. Resetting selectedVoice.");
+        }
+    } else {
+        // Dropdown has no value (e.g., "Select a voice" is selected, which has value="")
+        selectedVoice = null;
+        localStorage.removeItem('selectedVoice'); // Ensure no voice name is stored if none is selected
+        // console.log("No voice selected in dropdown. Setting selectedVoice to null.");
+    }
 }
 
 // ======================
@@ -540,11 +567,11 @@ function processMemoryCommand(message) {
     }
 
     // Case 2: User asks "What is my name?" or "What's my name?"
-    // Making this check more robust.
-    if (lowerMsg.includes("what") && lowerMsg.includes("my name")) {
+    // Applying generalized regex and ensuring speech for the name.
+    if (/(what|who|say|tell me).*my name/i.test(lowerMsg)) {
         const userName = recallFact("userName");
         if (userName && !userName.startsWith("I don't remember")) { // Check if userName is truthy before startsWith
-            respondToQuery(`Your name is ${userName}.`, true);
+            respondToQuery(`Your name is ${userName}.`, false); // Set to false to enable speech
         } else {
             respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
         }
@@ -729,7 +756,7 @@ function generateResponse(message) {
     }
 
     // Word of the Day text command
-    if (lowerMsg.includes("word of the day")) {
+    if (/word of the day/i.test(lowerMsg)) {
         return getWordOfTheDayMessage();
     }
 
@@ -1495,4 +1522,3 @@ window.deleteMemory = deleteMemory;
 
 // Initialize the chatbot
 document.addEventListener("DOMContentLoaded", init);
-
