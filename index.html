@@ -1,404 +1,457 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Learning Chatbot</title>
+    <title>Chatbot with Memory & Achievements</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4361ee;
-            --danger: #f72585;
-            --success: #4cc9f0;
-            --warning: #f8961e;
-            --info: #4895ef;
-            --background: #f8f9fa;
-            --text: #212529;
-            --bot-color: #f1f1f1;
-            --user-color: #e3f2fd;
-            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            
-            /* Dark mode variables */
-            --dark-bg: #121212;
-            --dark-text: #e0e0e0;
-            --dark-bot-color: #1e1e1e;
-            --dark-user-color: #2d3748;
-            --dark-border: #333;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: var(--background);
-            color: var(--text);
-            line-height: 1.6;
-            position: relative;
-            transition: background-color 0.3s, color 0.3s;
+            --primary-color: #4169E1; /* Royal Blue */
+            --primary-dark: #3558B6; /* Darker Royal Blue */
+            --secondary-color: #FFC107; /* Amber - unchanged, still works well */
+            --background-light: #f4f7f6;
+            --background-dark: #282c34;
+            --text-light: #333;
+            --text-dark: #f4f7f6;
+            --chat-bubble-user: #d6e0ff; /* Lighter blue for user bubble */
+            --chat-bubble-bot: #fff;
+            --chat-bubble-system: #e6e6fa; /* Lavender for system - or stick to amber if preferred */
+            --border-color: #ddd;
+            --input-bg: #fff;
+            --button-bg: #4169E1; /* Royal Blue for buttons */
+            --button-text: #fff;
+            --button-hover: #3558B6; /* Darker Royal Blue for hover */
+            --settings-panel-bg: #f9f9f9;
+            --modal-bg: rgba(0, 0, 0, 0.5);
+            --info: #6495ED; /* CornflowerBlue, a lighter, friendly blue for info */
         }
 
         body.dark-mode {
-            --background: var(--dark-bg);
-            --text: var(--dark-text);
-            --bot-color: var(--dark-bot-color);
-            --user-color: var(--dark-user-color);
+            --background-light: #282c34; /* This becomes the main page BG in dark mode */
+            --background-dark: #1c2634; /* This is for elements like chat container, modal, etc. */
+            --text-light: #f4f7f6;
+            --text-dark: #333; /* Text on lighter elements in dark mode, if any */
+            --chat-bubble-user: #2a3949; /* Darker blue user bubble */
+            --chat-bubble-bot: #1c2634; /* Matches element backgrounds */
+            --chat-bubble-system: #302a42; /* Darker lavender for system */
+            --border-color: #555;
+            --input-bg: #1c2634;
+            --button-bg: #3558B6; /* Darker Royal Blue for dark mode buttons */
+            --button-hover: #4169E1; /* Royal Blue for dark mode hover */
+            --settings-panel-bg: #1c2634;
+            --info: #6495ED; /* Cornflower blue for info in dark mode */
         }
 
-        h1 {
-            color: var(--primary);
-            text-align: center;
-            margin-bottom: 10px;
-            font-weight: 700;
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--background-light);
+            color: var(--text-light);
+            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden; /* Prevent scrollbar from toast */
         }
 
-        .clock-container {
-            text-align: center;
-            margin: 20px 0;
+        body.dark-mode {
+            --background-light: #282c34;
+            --background-dark: #3a3f47;
+            --text-light: #f4f7f6;
+            --text-dark: #333;
+            --chat-bubble-user: #4a5059;
+            --chat-bubble-bot: #3a3f47;
+            --chat-bubble-system: #614a2c;
+            --border-color: #555;
+            --input-bg: #3a3f47;
+            --button-bg: #388E3C;
+            --button-hover: #4CAF50;
+            --settings-panel-bg: #3a3f47;
+            --info: #64B5F6;
         }
 
-        .digital-clock {
-            font-size: 1.5rem;
+        .chat-container {
+            background-color: var(--background-dark);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 700px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative; /* For settings panel */
+        }
+
+        .chat-header {
+            background-color: var(--primary-color);
+            color: var(--button-text);
+            padding: 15px;
+            font-size: 1.2em;
             font-weight: bold;
-            color: var(--primary);
+            /* text-align: center; Removed for flex */
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            position: relative; /* Keep for settings panel positioning */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #chatBotName {
+            flex-grow: 1;
+            text-align: center;
+            /* Prevent name from pushing other elements too much if it's very long */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin: 0 10px; /* Add some margin around the name */
+        }
+
+        .chat-header .settings-btn {
+            /* position: absolute; No longer needed with flex */
+            /* right: 15px; */
+            /* top: 50%; */
+            /* transform: translateY(-50%); */
+            background: none;
+            border: none;
+            font-size: 1.5em;
             cursor: pointer;
-            transition: transform 0.2s;
+            color: var(--button-text);
+        }
+
+        .chat-header .settings-btn:hover {
+            color: var(--secondary-color);
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 60px; /* Below header */
+            right: 10px;
+            background-color: var(--settings-panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none; /* Hidden by default */
+            width: 250px;
+            color: var(--text-light);
+        }
+
+        .settings-panel h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1em;
+            color: var(--primary-dark);
+        }
+
+        body.dark-mode .settings-panel h5 {
+            color: var(--secondary-color);
+        }
+
+        .settings-panel label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .settings-panel input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .settings-panel input[type="text"],
+        .settings-panel select,
+        .settings-panel input[type="range"] {
+            width: calc(100% - 16px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+
+        .settings-panel .slider-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .settings-panel .slider-group span {
+            margin-left: 10px;
+            min-width: 30px; /* Ensure space for value */
+        }
+
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: var(--background-dark); /* Background behind messages */
+            color: var(--text-light);
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .user-message {
+            background-color: var(--chat-bubble-user);
+            margin-left: auto;
+            text-align: right;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-message {
+            background-color: var(--chat-bubble-bot);
+            margin-right: auto;
+            text-align: left;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .system-message {
+            background-color: var(--chat-bubble-system);
+            color: var(--text-light);
+            text-align: center;
+            font-size: 0.85em;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 10px auto;
+            max-width: 80%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        #typing-indicator {
+            display: none; /* Hidden by default */
+            align-items: center;
+            margin-top: 10px;
+            margin-left: 15px;
+            font-style: italic;
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        #typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #888;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        #typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        #typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--background-dark);
+            align-items: center;
+        }
+
+        .chat-input input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            outline: none;
+            font-size: 1em;
+            background-color: var(--input-bg);
+            color: var(--text-light);
+        }
+
+        .chat-input button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-input button:hover {
+            background-color: var(--button-hover);
+            transform: translateY(-1px);
+        }
+
+        .chat-input button:active {
+            transform: translateY(0);
+        }
+
+        .chat-input button#micButton.listening {
+            background-color: #f44336; /* Red when listening */
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        .status {
+            text-align: center;
+            padding: 5px 0;
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .footer-controls {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 15px;
+            background-color: var(--background-dark);
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .footer-controls button {
+            background-color: var(--primary-color);
+            color: var(--button-text);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .footer-controls button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .footer-controls button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* Digital Clock */
+        .digital-clock {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 0.8em;
+            color: var(--button-text);
+            cursor: pointer;
+            user-select: none;
         }
 
         .digital-clock:hover {
-            transform: scale(1.05);
+            color: var(--secondary-color);
         }
 
         .fullscreen-clock {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.9);
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.9);
             color: white;
-            display: flex;
+            display: none; /* Hidden by default */
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            font-size: 4rem;
-            cursor: pointer;
-        }
-
-        .fullscreen-clock .date {
-            font-size: 2rem;
-            margin-top: 20px;
-        }
-
-        .chat-container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            height: 500px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .dark-mode .chat-container {
-            background-color: var(--dark-bot-color);
-        }
-
-        .chat-header {
-            background-color: var(--primary);
-            color: white;
-            padding: 15px;
-            text-align: center;
+            font-size: 8em;
             font-weight: bold;
-            font-size: 1.2em;
-        }
-
-        .chat-box {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            background-color: var(--background);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message {
-            padding: 12px 16px;
-            border-radius: 18px;
-            margin: 12px 0;
-            max-width: 85%;
-            word-wrap: break-word;
-            box-shadow: var(--shadow);
-            line-height: 1.5;
-            animation: fadeIn 0.3s ease;
-            opacity: 0.95;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 0.95; transform: translateY(0); }
-        }
-
-        .user-message {
-            background: var(--user-color);
-            color: var(--text);
-            margin-left: auto;
-            border-radius: 18px 18px 0 18px;
-        }
-
-        .dark-mode .user-message {
-            background: var(--dark-user-color);
-            color: white;
-        }
-
-        .bot-message {
-            background: var(--bot-color);
-            border-radius: 18px 18px 18px 0;
-        }
-
-        .system-message {
-            background: #f8f9fa;
-            margin: 12px auto;
-            max-width: 90%;
-            text-align: center;
-            font-style: italic;
-            color: #6c757d;
-            border-left: 4px solid var(--info);
-            font-size: 0.9em;
-        }
-
-        .dark-mode .system-message {
-            background: #1e1e1e;
-            color: #aaa;
-            border-left-color: var(--primary);
-        }
-
-        .input-area {
-            display: flex;
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #eee;
-            gap: 12px;
-        }
-
-        .dark-mode .input-area {
-            background-color: var(--dark-bot-color);
-            border-top-color: var(--dark-border);
-        }
-
-        #userInput {
-            flex: 1;
-            padding: 14px 18px;
-            border: 1px solid #ced4da;
-            border-radius: 24px;
-            font-size: 16px;
-            background: white;
-            color: var(--text);
-            transition: all 0.2s;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .dark-mode #userInput {
-            background: #333;
-            border-color: #555;
-            color: white;
-        }
-
-        #userInput:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-        }
-
-        button {
-            padding: 14px 22px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 24px;
+            z-index: 200;
             cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s;
-            font-weight: 500;
-            box-shadow: var(--shadow);
         }
 
-        button:hover {
-            filter: brightness(1.1);
-            transform: translateY(-2px);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        #sendButton {
-            margin-left: 0;
-        }
-
-        #micButton {
-            background: var(--danger);
-            width: 56px;
-            height: 56px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            border-radius: 50%;
-        }
-
-        #micButton.listening {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(247, 37, 133, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
-        }
-
-        .control-panel {
-            background: white;
-            border-radius: 14px;
+        .fullscreen-clock #fsDate {
+            font-size: 0.3em;
             margin-top: 20px;
-            box-shadow: var(--shadow);
         }
 
-        .dark-mode .control-panel {
-            background: var(--dark-bot-color);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .dark-mode .panel-header {
-            border-bottom-color: var(--dark-border);
-        }
-
-        .panel-title {
-            font-weight: 600;
-            color: var(--primary);
-            font-size: 1.1em;
-        }
-
-        .memory-actions {
-            display: flex;
-            gap: 10px;
-            padding: 0 15px 15px;
-            flex-wrap: wrap;
-        }
-
-        .memory-actions button {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .tts-controls {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            flex-wrap: wrap;
-        }
-
-        #readBtn {
-            background-color: var(--success);
-            color: white;
-        }
-
-        #pauseBtn {
-            background-color: var(--warning);
-            color: white;
-        }
-
-        #resumeBtn {
-            background-color: var(--info);
-            color: white;
-        }
-
-        #stopBtn {
-            background-color: var(--danger);
-            color: white;
-        }
-
-        .typing-indicator {
-            display: none;
-            align-self: flex-start;
-            background-color: var(--bot-color);
-            padding: 10px 15px;
-            border-radius: 18px;
-            margin-bottom: 5px;
-        }
-
-        .typing-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #666;
-            margin: 0 2px;
-            animation: typingAnimation 1.4s infinite ease-in-out;
-        }
-
-        @keyframes typingAnimation {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-5px); }
-        }
-
-        #status {
-            height: 20px;
-            margin-top: 8px;
-            color: #6c757d;
-            font-size: 14px;
-            text-align: center;
-            font-style: italic;
-        }
-
-        .dark-mode #status {
-            color: #aaa;
-        }
-
+        /* Modal for Memories & Achievements */
         .modal {
-            display: none;
+            display: none; /* Hidden by default */
             position: fixed;
-            z-index: 100;
+            z-index: 101; /* Higher than settings panel */
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
+            overflow: auto;
+            background-color: var(--modal-bg);
             justify-content: center;
+            align-items: center;
         }
 
         .modal-content {
-            background-color: white;
-            margin: 10% auto;
+            background-color: var(--background-dark);
+            margin: auto;
             padding: 20px;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
-            width: 90%;
+            width: 80%;
             max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             position: relative;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-light);
         }
 
-        .dark-mode .modal-content {
-            background-color: var(--dark-bg);
-            color: var(--dark-text);
+        .modal-content h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-tabs button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            font-size: 1.1em;
+            color: #888;
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-bottom 0.2s;
+        }
+
+        .modal-tabs button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .modal-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px; /* For scrollbar */
         }
 
         .close {
@@ -411,361 +464,334 @@
             cursor: pointer;
         }
 
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        body.dark-mode .close {
+            color: #ccc;
+        }
+        body.dark-mode .close:hover,
+        body.dark-mode .close:focus {
+            color: white;
+        }
+
+
         .command-item {
-            background-color: #f9f9f9;
-            padding: 15px;
-            margin-bottom: 10px;
+            background-color: var(--input-bg);
+            padding: 10px;
             border-radius: 5px;
-            border-left: 4px solid var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        .dark-mode .command-item {
-            background-color: #1e1e1e;
+        .command-item p {
+            margin: 0;
+            flex-grow: 1;
+            padding-right: 10px;
+            color: var(--text-light);
         }
 
-        .settings-menu {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .settings-btn {
-            background: var(--primary);
+        .command-item button {
+            background-color: #f44336;
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--shadow);
-        }
-
-        .settings-panel {
-            position: absolute;
-            top: 50px;
-            right: 0;
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: var(--shadow);
-            width: 250px;
-            display: none;
-            z-index: 101;
-        }
-
-        .dark-mode .settings-panel {
-            background: var(--dark-bg);
-            color: var(--dark-text);
-        }
-
-        .settings-panel h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .dark-mode .settings-panel h3 {
-            border-color: var(--dark-border);
-        }
-
-        .settings-option {
-            margin: 10px 0;
-        }
-
-        .settings-option label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        select, input[type="text"], input[type="range"] {
-            width: 100%;
-            padding: 8px;
+            padding: 5px 10px;
             border-radius: 5px;
-            border: 1px solid #ddd;
-            background: white;
-            color: var(--text);
-        }
-
-        .dark-mode select,
-        .dark-mode input[type="text"],
-        .dark-mode input[type="range"] {
-            background: #333;
-            border-color: #555;
-            color: white;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 52px;
-            height: 30px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
+            font-size: 0.8em;
+            transition: background-color 0.2s;
         }
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+        .command-item button:hover {
+            background-color: #d32f2f;
         }
 
-        input:checked + .slider {
-            background-color: var(--success);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(22px);
-        }
-
-        .range-container {
+        .memory-actions {
             display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .range-value {
-            min-width: 30px;
-            text-align: center;
-        }
-
-        .features-panel {
-            background: white;
-            border-radius: 14px;
+            justify-content: space-around;
             margin-top: 20px;
-            box-shadow: var(--shadow);
-        }
-
-        .dark-mode .features-panel {
-            background: var(--dark-bot-color);
-        }
-
-        .feature-buttons {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
             flex-wrap: wrap;
         }
 
-        .feature-buttons button {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        #jokeBtn {
-            background-color: #7209b7;
+        .memory-actions button {
+            background-color: var(--info);
             color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin: 5px;
+            transition: background-color 0.2s;
         }
 
-        #quoteBtn {
-            background-color: #3a86ff;
+        .memory-actions button:hover {
+            background-color: #1976D2;
+        }
+
+        .memory-actions button#clearMemoryBtn {
+            background-color: #f44336;
+        }
+
+        .memory-actions button#clearMemoryBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Achievements */
+        #achievementList {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            padding: 10px;
+        }
+
+        .achievement-item {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .achievement-item.earned {
+            opacity: 1;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+        }
+
+        .achievement-item.earned::after {
+            content: '✓';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--primary-color);
             color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        #factBtn {
-            background-color: #f8961e;
-            color: white;
+
+        .achievement-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        #poemBtn {
-            background-color: #8338ec;
-            color: white;
+        .achievement-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
         }
 
-        #riddleBtn {
-            background-color: #ff006e;
-            color: white;
+        .achievement-item h4 {
+            margin: 5px 0;
+            color: var(--primary-dark);
+            font-size: 1.1em;
         }
 
-        #storyBtn {
-            background-color: #3a86ff;
-            color: white;
+        body.dark-mode .achievement-item h4 {
+             color: var(--secondary-color);
         }
 
+
+        .achievement-item p {
+            font-size: 0.9em;
+            color: #777;
+            margin-bottom: 10px;
+        }
+        body.dark-mode .achievement-item p {
+             color: #bbb;
+        }
+
+
+        .achievement-progress {
+            width: 80%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 0 auto 5px;
+            overflow: hidden;
+        }
+        body.dark-mode .achievement-progress {
+            background-color: #555;
+        }
+
+
+        .achievement-progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.5s ease-out;
+        }
+
+        .achievement-item small {
+            font-size: 0.75em;
+            color: #999;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 600px) {
             .chat-container {
-                height: 70vh;
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
             }
+
+            .chat-header {
+                border-radius: 0;
+            }
+
             .message {
-                max-width: 90%;
+                max-width: 85%;
             }
-            .memory-actions button,
-            .feature-buttons button {
-                min-width: 100%;
+
+            .chat-input input {
+                padding: 10px;
             }
+
+            .chat-input button {
+                width: 40px;
+                height: 40px;
+                font-size: 1.3em;
+            }
+
+            .footer-controls button {
+                font-size: 0.75em;
+                padding: 6px 10px;
+            }
+
             .settings-panel {
-                width: 200px;
+                width: 90%;
+                right: 5%;
+                left: 5%;
+                top: 55px;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+
+            .fullscreen-clock {
+                font-size: 4em;
             }
         }
+
     </style>
 </head>
 <body>
-    <div class="settings-menu">
-        <button class="settings-btn">⚙️</button>
-        <div class="settings-panel">
-            <h3>Settings</h3>
-            <div class="settings-option">
-                <label for="botNameInput">Bot Name:</label>
-                <input type="text" id="botNameInput" placeholder="Assistant">
-            </div>
-            <div class="settings-option">
-                <label for="voiceSelect">Voice:</label>
-                <select id="voiceSelect"></select>
-            </div>
-            <div class="settings-option">
-                <label for="voiceRate">Voice Speed:</label>
-                <div class="range-container">
-                    <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
-                    <span class="range-value" id="rateValue">1</span>
-                </div>
-            </div>
-            <div class="settings-option">
-                <label for="voicePitch">Voice Pitch:</label>
-                <div class="range-container">
-                    <input type="range" id="voicePitch" min="0.5" max="2" step="0.1" value="1">
-                    <span class="range-value" id="pitchValue">1</span>
-                </div>
-            </div>
-            <div class="settings-option">
-                <label for="voiceVolume">Voice Volume:</label>
-                <div class="range-container">
-                    <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="1">
-                    <span class="range-value" id="volumeValue">1</span>
-                </div>
-            </div>
-            <div class="settings-option">
-                <label>Dark Mode:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="darkModeToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="settings-option">
-                <label>Speak Bot Responses Automatically:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="autoSpeakBotToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="settings-option">
-                <label>Speak My Messages on Send:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="speakUserMsgToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div class="clock-container">
-        <div class="digital-clock" id="digitalClock"></div>
-    </div>
-
-    <div class="fullscreen-clock" id="fullscreenClock" style="display: none;">
-        <div class="time" id="fsTime"></div>
-        <div class="date" id="fsDate"></div>
-    </div>
-
     <div class="chat-container">
         <div class="chat-header">
-            ChatBot Assistant
+            <span id="digitalClock" class="digital-clock"></span>
+            <span id="chatBotName">Assistant</span>
+            <button class="settings-btn">⚙️</button>
+            <div class="settings-panel">
+                <h5>General Settings</h5>
+                <label>Bot Name: <input type="text" id="botNameInput"></label>
+                <label><input type="checkbox" id="darkModeToggle"> Dark Mode</label>
+
+                <h5>Voice Settings</h5>
+                <label for="voiceSelect">Voice:</label>
+                <select id="voiceSelect"></select>
+
+                <label for="voiceRate">Speech Rate:</label>
+                <div class="slider-group">
+                    <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
+                    <span id="rateValue">1</span>
+                </div>
+
+                <label for="voicePitch">Speech Pitch:</label>
+                <div class="slider-group">
+                    <input type="range" id="voicePitch" min="0" max="2" step="0.1" value="1">
+                    <span id="pitchValue">1</span>
+                </div>
+
+                <label><input type="checkbox" id="autoSpeakBotToggle"> Auto-speak Bot Responses</label>
+                <label><input type="checkbox" id="speakUserMsgToggle"> Speak User Messages on Send</label>
+            </div>
         </div>
         <div class="chat-box" id="chatBox">
-            <!-- Messages will appear here -->
+            <div id="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
         </div>
-        
-        <div class="typing-indicator" id="typing-indicator">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
+        <div class="status" id="status"></div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button id="sendButton">➤</button>
+            <button id="micButton">🎙️</button>
         </div>
-        
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Type your message or say 'Remember my name is Alex'..." autocomplete="off" autofocus>
-            <button id="sendButton">Send</button>
-            <button id="micButton" title="Toggle microphone">🎤</button>
+        <div class="footer-controls">
+            <button id="showMemoryBtn">Memories</button>
+            <button id="jokeBtn">Joke</button>
+            <button id="quoteBtn">Quote</button>
+            <button id="factBtn">Fact</button>
+            <button id="poemBtn">Poem</button>
+            <button id="riddleBtn">Riddle</button>
+            <button id="storyBtn">Story</button>
+            <button id="wordOfTheDayBtn">WOTD</button>
         </div>
-    </div>
-    
-    <div id="status"></div>
-    
-    <div class="control-panel">
-        <div class="panel-header">
-            <div class="panel-title">Memory Controls</div>
-        </div>
-        <div class="memory-actions">
-            <button id="showMemoryBtn">Show Memories</button>
-            <button id="downloadMemoryBtn">Download Memories</button>
-            <button id="uploadMemoryBtn">Upload Memories</button>
-            <button id="clearMemoryBtn">Clear Memories</button>
-        </div>
-        <input type="file" id="fileInput" accept=".txt,.json">
-    </div>
-
-    <div class="control-panel">
-        <div class="panel-header">
-            <div class="panel-title">Voice Controls</div>
-        </div>
-        <div class="tts-controls">
-            <button id="readLastMessageBtn">🔊 Read Last Msg</button>
-            <button id="readMyLastBtn">🗣️ Read My Last</button>
-            <button id="readSelectedBtn">🔍 Read Selected</button>
-            <button id="pauseBtn" disabled>⏸ Pause</button>
-            <button id="resumeBtn" disabled>▶ Resume</button>
-            <button id="stopBtn" disabled>⏹ Stop</button>
+        <div class="footer-controls">
+            <button id="readLastMessageBtn">Read Last Msg</button>
+            <button id="readMyLastBtn">Read My Last</button>
+            <button id="readSelectedBtn">Read Selected</button>
+            <button id="pauseBtn" disabled>⏸️</button>
+            <button id="resumeBtn" disabled>▶️</button>
+            <button id="stopBtn" disabled>⏹️</button>
         </div>
     </div>
 
-    <div class="features-panel">
-        <div class="panel-header">
-            <div class="panel-title">Fun Features</div>
-        </div>
-        <div class="feature-buttons">
-            <button id="jokeBtn">😆 Tell a Joke</button>
-            <button id="quoteBtn">💬 Random Quote</button>
-            <button id="factBtn">🧠 Interesting Fact</button>
-            <button id="poemBtn">✍️ Write a Poem</button>
-            <button id="riddleBtn">🤔 Riddle Me</button>
-            <button id="storyBtn">📖 Short Story</button>
-            <button id="wordOfTheDayBtn">💡 Word of the Day</button>
-        </div>
+    <div id="fullscreenClock" class="fullscreen-clock">
+        <span id="fsTime"></span>
+        <span id="fsDate"></span>
     </div>
-    
+
     <div id="memoryModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Chatbot Memories</h2>
-            <div id="memoryList"></div>
+            <h3>Chatbot Data</h3>
+            <div class="modal-tabs">
+                <button id="tabMemories" class="active">Memories</button>
+                <button id="tabAchievements">Achievements</button>
+            </div>
+            <div class="modal-body">
+                <div id="memoriesContent">
+                    <div id="memoryList">
+                        </div>
+                    <div class="memory-actions">
+                        <button id="downloadMemoryBtn">Download All</button>
+                        <button id="uploadMemoryBtn">Upload Memories</button>
+                        <input type="file" id="fileInput" accept=".json" style="display: none;">
+                        <button id="clearMemoryBtn">Clear All</button>
+                    </div>
+                </div>
+                <div id="achievementsContent" style="display: none;">
+                    <div id="achievementList">
+                        </div>
+                </div>
+            </div>
         </div>
     </div>
-    <script src="script.js" defer></script>
+
+    <script src="script.js"></script>
 </body>
 </html>
-
