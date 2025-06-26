@@ -45,6 +45,7 @@ let conversationContext = {
 // Voice settings
 let voiceRate = parseFloat(localStorage.getItem('voiceRate')) || 1;
 let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
+let voiceVolume = parseFloat(localStorage.getItem('voiceVolume')) || 1;
 let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
 let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
 
@@ -109,6 +110,16 @@ function initSettings() {
         document.getElementById('pitchValue').textContent = voicePitch;
         localStorage.setItem('voicePitch', voicePitch);
     });
+
+            // Voice volume control
+            const voiceVolumeInput = document.getElementById('voiceVolume');
+            voiceVolumeInput.value = voiceVolume;
+            document.getElementById('volumeValue').textContent = voiceVolume;
+            voiceVolumeInput.addEventListener('input', function() {
+                voiceVolume = parseFloat(this.value);
+                document.getElementById('volumeValue').textContent = voiceVolume;
+                localStorage.setItem('voiceVolume', voiceVolume);
+            });
 
     // Voice selection is now primarily handled by `onvoiceschanged` and `populateVoiceList`
     // to ensure voices are loaded before selection.
@@ -232,6 +243,22 @@ function populateVoiceList() {
                 } else {
                     selectedVoice = null; // No specific voice selected
                 }
+            }
+
+            // Final check: Ensure global selectedVoice object matches the actual dropdown value
+            if (voiceSelect.value) {
+                const allVoices = synth.getVoices(); // Get fresh list again
+                const currentlySelectedVoiceObject = allVoices.find(v => v.name === voiceSelect.value);
+                if (currentlySelectedVoiceObject) {
+                    selectedVoice = currentlySelectedVoiceObject;
+                } else {
+                    // This case should ideally not happen if the dropdown is populated correctly
+                    // and value corresponds to a real voice name.
+                    selectedVoice = null;
+                    // console.warn("Selected voice in dropdown not found in synth.getVoices(). This is unexpected.");
+                }
+            } else {
+                selectedVoice = null; // No voice is selected in the dropdown
             }
 }
 
@@ -357,7 +384,8 @@ function downloadMemories() {
         botName: botName,
         voice: selectedVoice ? selectedVoice.name : null,
         voiceRate: voiceRate,
-        voicePitch: voicePitch
+        voicePitch: voicePitch,
+        voiceVolume: voiceVolume // Added voiceVolume
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain' });
@@ -416,6 +444,12 @@ function handleFileUpload(event) {
                 document.getElementById('voicePitch').value = voicePitch;
                 document.getElementById('pitchValue').textContent = voicePitch;
                 localStorage.setItem('voicePitch', voicePitch);
+            }
+            if (data.voiceVolume) { // Added section for voiceVolume
+                voiceVolume = parseFloat(data.voiceVolume);
+                document.getElementById('voiceVolume').value = voiceVolume;
+                document.getElementById('volumeValue').textContent = voiceVolume;
+                localStorage.setItem('voiceVolume', voiceVolume);
             }
 
             respondToQuery("Memories successfully uploaded from file!", true);
@@ -478,7 +512,7 @@ function processMemoryCommand(message) {
     if (lowerMsg.includes("what") && lowerMsg.includes("my name")) {
         const userName = recallFact("userName");
         if (userName && !userName.startsWith("I don't remember")) { // Check if userName is truthy before startsWith
-            respondToQuery(`Your name is ${userName}.`, true);
+            respondToQuery(`Your name is ${userName}.`, false); // Changed to false
         } else {
             respondToQuery("I don't seem to know your name yet. You can tell me by saying 'Remember my name is [Your Name]'.", true);
         }
@@ -968,6 +1002,7 @@ function configureUtterance(utterance) {
     }
     utterance.rate = voiceRate;
     utterance.pitch = voicePitch;
+    utterance.volume = voiceVolume;
 }
 
 function speak(text) {
