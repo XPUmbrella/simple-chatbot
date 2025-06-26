@@ -11,36 +11,46 @@
             --primary-dark: #3558B6; /* Darker Royal Blue */
             --secondary-color: #FFC107; /* Amber - unchanged, still works well */
             --background-light: #f4f7f6;
-            --background-dark: #282c34;
-            --text-light: #333;
-            --text-dark: #f4f7f6;
-            --chat-bubble-user: #d6e0ff; /* Lighter blue for user bubble */
-            --chat-bubble-bot: #fff;
-            --chat-bubble-system: #e6e6fa; /* Lavender for system - or stick to amber if preferred */
+            --background-dark: #282c34; /* Primary container background for light mode */
+            --text-light: #333; /* Default text for light mode */
+            --text-dark: #f4f7f6; /* Default text for dark mode */
+            --chat-bubble-user: #d6e0ff; /* Lighter blue for user bubble in light mode */
+            --chat-bubble-bot: #ffffff; /* White bot bubble in light mode */
+            --chat-bubble-system: #e6e6fa; /* Lavender for system bubble in light mode */
             --border-color: #ddd;
-            --input-bg: #fff;
+            --input-bg: #ffffff; /* White input background in light mode */
             --button-bg: #4169E1; /* Royal Blue for buttons */
-            --button-text: #fff;
+            --button-text: #ffffff; /* White text on buttons */
             --button-hover: #3558B6; /* Darker Royal Blue for hover */
-            --settings-panel-bg: #f9f9f9;
+            --settings-panel-bg: #f9f9f9; /* Light grey for settings panel in light mode */
             --modal-bg: rgba(0, 0, 0, 0.5);
-            --info: #6495ED; /* CornflowerBlue, a lighter, friendly blue for info */
+            --info: #6495ED; /* CornflowerBlue, a friendly blue for info sections */
         }
 
         body.dark-mode {
-            --background-light: #282c34; /* This becomes the main page BG in dark mode */
-            --background-dark: #1c2634; /* This is for elements like chat container, modal, etc. */
-            --text-light: #f4f7f6;
-            --text-dark: #333; /* Text on lighter elements in dark mode, if any */
-            --chat-bubble-user: #2a3949; /* Darker blue user bubble */
-            --chat-bubble-bot: #1c2634; /* Matches element backgrounds */
-            --chat-bubble-system: #302a42; /* Darker lavender for system */
-            --border-color: #555;
-            --input-bg: #1c2634;
-            --button-bg: #3558B6; /* Darker Royal Blue for dark mode buttons */
-            --button-hover: #4169E1; /* Royal Blue for dark mode hover */
-            --settings-panel-bg: #1c2634;
-            --info: #6495ED; /* Cornflower blue for info in dark mode */
+            /* Dark Mode Overrides */
+            --primary-color: #587EFF; /* Brighter Royal Blue for dark mode accents if needed */
+            --primary-dark: #4169E1; /* Standard Royal Blue for less emphasis in dark mode */
+            /* --secondary-color unchanged, still works */
+            
+            --background-light: #1e2732; /* Overall page background in dark mode */
+            --background-dark: #283342; /* Chat container, modals, etc. background in dark mode */
+            
+            --text-light: #e0e0e0; /* Primary text color for dark mode */
+            /* --text-dark is for text on light backgrounds if any appear in dark mode, less common */
+            
+            --chat-bubble-user: #304057; /* Darker, muted blue for user bubble */
+            --chat-bubble-bot: #283342; /* Matches element background for bot bubble */
+            --chat-bubble-system: #3b3250; /* Darker lavender/purple for system bubble */
+            
+            --border-color: #444; /* Darker border */
+            --input-bg: #1e2732; /* Input background matches page background */
+            
+            --button-bg: #4169E1; /* Royal Blue for buttons in dark mode */
+            --button-hover: #587EFF; /* Brighter Royal Blue for hover */
+            
+            --settings-panel-bg: #283342; /* Settings panel matches element backgrounds */
+            /* --info: #6495ED; Already good */
         }
 
         body {
@@ -56,21 +66,7 @@
             overflow: hidden; /* Prevent scrollbar from toast */
         }
 
-        body.dark-mode {
-            --background-light: #282c34;
-            --background-dark: #3a3f47;
-            --text-light: #f4f7f6;
-            --text-dark: #333;
-            --chat-bubble-user: #4a5059;
-            --chat-bubble-bot: #3a3f47;
-            --chat-bubble-system: #614a2c;
-            --border-color: #555;
-            --input-bg: #3a3f47;
-            --button-bg: #388E3C;
-            --button-hover: #4CAF50;
-            --settings-panel-bg: #3a3f47;
-            --info: #64B5F6;
-        }
+        /* Removed the duplicate body.dark-mode block that was causing green buttons */
 
         .chat-container {
             background-color: var(--background-dark);
@@ -91,7 +87,6 @@
             padding: 15px;
             font-size: 1.2em;
             font-weight: bold;
-            /* text-align: center; Removed for flex */
             border-top-left-radius: 10px;
             border-top-right-radius: 10px;
             position: relative; /* Keep for settings panel positioning */
@@ -99,27 +94,35 @@
             align-items: center;
             justify-content: space-between;
         }
+        
+        .digital-clock { /* Class used by <span id="digitalClock"> - for Flex layout */
+            font-size: 0.8em;
+            color: var(--button-text);
+            cursor: pointer;
+            user-select: none;
+            margin-right: 10px; /* Space between clock and bot name */
+        }
 
-        #chatBotName {
+        .digital-clock:hover {
+            color: var(--secondary-color);
+        }
+
+        #chatBotName { /* Styling for the bot's name in the header */
             flex-grow: 1;
             text-align: center;
-            /* Prevent name from pushing other elements too much if it's very long */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin: 0 10px; /* Add some margin around the name */
+            margin: 0 5px; /* Give it a little space from clock/button */
         }
 
         .chat-header .settings-btn {
-            /* position: absolute; No longer needed with flex */
-            /* right: 15px; */
-            /* top: 50%; */
-            /* transform: translateY(-50%); */
             background: none;
             border: none;
             font-size: 1.5em;
             cursor: pointer;
             color: var(--button-text);
+            margin-left: 10px; /* Ensure space if bot name is short */
         }
 
         .chat-header .settings-btn:hover {
@@ -148,7 +151,7 @@
             color: var(--primary-dark);
         }
 
-        body.dark-mode .settings-panel h5 {
+        body.dark-mode .settings-panel h5 { 
             color: var(--secondary-color);
         }
 
@@ -347,21 +350,6 @@
         .footer-controls button:disabled {
             background-color: #aaa;
             cursor: not-allowed;
-        }
-
-        /* Digital Clock */
-        .digital-clock {
-            position: absolute;
-            top: 10px;
-            left: 15px;
-            font-size: 0.8em;
-            color: var(--button-text);
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .digital-clock:hover {
-            color: var(--secondary-color);
         }
 
         .fullscreen-clock {
@@ -569,7 +557,7 @@
         .achievement-item.earned {
             opacity: 1;
             border-color: var(--primary-color);
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 0 10px var(--primary-color); /* Changed to primary color */
         }
 
         .achievement-item.earned::after {
@@ -577,7 +565,7 @@
             position: absolute;
             top: -10px;
             right: -10px;
-            background-color: var(--primary-color);
+            background-color: var(--primary-color); 
             color: white;
             border-radius: 50%;
             width: 30px;
