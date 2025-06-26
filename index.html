@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,24 +7,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --primary-dark: #388E3C;
-            --secondary-color: #FFC107;
+            --primary-color: #4169E1; /* Royal Blue */
+            --primary-dark: #3558B6; /* Darker Royal Blue */
+            --secondary-color: #FFC107; /* Amber - unchanged, still works well */
             --background-light: #f4f7f6;
             --background-dark: #282c34;
             --text-light: #333;
             --text-dark: #f4f7f6;
-            --chat-bubble-user: #e0f7fa;
+            --chat-bubble-user: #d6e0ff; /* Lighter blue for user bubble */
             --chat-bubble-bot: #fff;
-            --chat-bubble-system: #ffe0b2;
+            --chat-bubble-system: #e6e6fa; /* Lavender for system - or stick to amber if preferred */
             --border-color: #ddd;
             --input-bg: #fff;
-            --button-bg: #4CAF50;
+            --button-bg: #4169E1; /* Royal Blue for buttons */
             --button-text: #fff;
-            --button-hover: #45a049;
+            --button-hover: #3558B6; /* Darker Royal Blue for hover */
             --settings-panel-bg: #f9f9f9;
             --modal-bg: rgba(0, 0, 0, 0.5);
-            --info: #2196F3;
+            --info: #6495ED; /* CornflowerBlue, a lighter, friendly blue for info */
+        }
+
+        body.dark-mode {
+            --background-light: #282c34; /* This becomes the main page BG in dark mode */
+            --background-dark: #1c2634; /* This is for elements like chat container, modal, etc. */
+            --text-light: #f4f7f6;
+            --text-dark: #333; /* Text on lighter elements in dark mode, if any */
+            --chat-bubble-user: #2a3949; /* Darker blue user bubble */
+            --chat-bubble-bot: #1c2634; /* Matches element backgrounds */
+            --chat-bubble-system: #302a42; /* Darker lavender for system */
+            --border-color: #555;
+            --input-bg: #1c2634;
+            --button-bg: #3558B6; /* Darker Royal Blue for dark mode buttons */
+            --button-hover: #4169E1; /* Royal Blue for dark mode hover */
+            --settings-panel-bg: #1c2634;
+            --info: #6495ED; /* Cornflower blue for info in dark mode */
         }
 
         body {
@@ -76,17 +91,30 @@
             padding: 15px;
             font-size: 1.2em;
             font-weight: bold;
-            text-align: center;
+            /* text-align: center; Removed for flex */
             border-top-left-radius: 10px;
             border-top-right-radius: 10px;
-            position: relative;
+            position: relative; /* Keep for settings panel positioning */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #chatBotName {
+            flex-grow: 1;
+            text-align: center;
+            /* Prevent name from pushing other elements too much if it's very long */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin: 0 10px; /* Add some margin around the name */
         }
 
         .chat-header .settings-btn {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
+            /* position: absolute; No longer needed with flex */
+            /* right: 15px; */
+            /* top: 50%; */
+            /* transform: translateY(-50%); */
             background: none;
             border: none;
             font-size: 1.5em;
@@ -767,4 +795,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
