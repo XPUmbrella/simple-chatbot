@@ -29,7 +29,6 @@ const tabAchievements = document.getElementById('tabAchievements');
 const memoriesContent = document.getElementById('memoriesContent');
 const achievementsContent = document.getElementById('achievementsContent');
 
-
 // Initialize memory systems
 if (!localStorage.getItem('chatbotMemory')) {
     localStorage.setItem('chatbotMemory', JSON.stringify({}));
@@ -53,6 +52,14 @@ let voicePitch = parseFloat(localStorage.getItem('voicePitch')) || 1;
 let speakBotResponsesAutomatically = localStorage.getItem('speakBotResponsesAutomatically') === 'true';
 let speakUserMessagesOnSend = localStorage.getItem('speakUserMessagesOnSend') === 'true';
 
+// ======================
+// LLM INTEGRATION CONFIGURATION
+// ======================
+// IMPORTANT: Replace these placeholders with your actual LLM API endpoint and key.
+// Using LLM APIs may incur costs depending on the provider and usage.
+const LLM_API_ENDPOINT = 'YOUR_LLM_API_ENDPOINT_HERE'; // e.g., 'https://api.example.com/v1/chat/completions'
+const LLM_API_KEY = 'YOUR_LLM_API_KEY_HERE';
+const USE_SIMULATED_LLM = true; // Set to false to use the actual API, true to use simulated responses for testing.
 
 // ======================
 // SETTINGS SYSTEM
@@ -665,6 +672,65 @@ function learnNewResponse(trigger, response) {
 }
 
 // ======================
+// LLM API CALL FUNCTION
+// ======================
+async function callLlmApi(message) {
+    if (USE_SIMULATED_LLM || LLM_API_ENDPOINT === 'YOUR_LLM_API_ENDPOINT_HERE' || LLM_API_KEY === 'YOUR_LLM_API_KEY_HERE') {
+        // Simulate API call for testing if actual endpoint/key are not set or if simulation is forced
+        return new Promise(resolve => {
+            setTimeout(() => {
+                if (message.toLowerCase().includes("error test")) {
+                    resolve({ error: "Simulated LLM API error." });
+                } else if (message.toLowerCase().includes("empty test")) {
+                    resolve({ response: "" });
+                }
+                else {
+                    resolve({ response: `Simulated LLM response to: "${message}"` });
+                }
+            }, 1500);
+        });
+    }
+
+    // Actual API call (requires LLM_API_ENDPOINT and LLM_API_KEY to be set)
+    try {
+        const response = await fetch(LLM_API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${LLM_API_KEY}` // Adjust authorization as per your LLM API's requirements
+            },
+            body: JSON.stringify({
+                prompt: message, // This is a simplified payload; adjust to your LLM API's specific schema
+                max_tokens: 150 // Example parameter
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: "Unknown API error" }));
+            console.error('LLM API Error:', response.status, errorData);
+            return { error: `LLM API request failed with status ${response.status}. ${errorData.message || ''}` };
+        }
+
+        const data = await response.json();
+        // Extract the response text according to your LLM API's response structure
+        // This is a common structure, but might need adjustment:
+        const llmResponseText = data.choices && data.choices[0] && data.choices[0].text ? data.choices[0].text.trim() : null;
+
+        if (llmResponseText) {
+            return { response: llmResponseText };
+        } else {
+            console.error('LLM API Error: No response text found in API output.', data);
+            return { error: "LLM API returned an empty or malformed response." };
+        }
+
+    } catch (error) {
+        console.error('Error calling LLM API:', error);
+        return { error: `Failed to connect to LLM API. ${error.message}` };
+    }
+}
+
+
+// ======================
 // CORE CHAT FUNCTIONS
 // ======================
 function addMessage(sender, message) {
@@ -692,7 +758,7 @@ function addMessage(sender, message) {
     }
 }
 
-function sendMessage() {
+async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
 
@@ -715,18 +781,42 @@ function sendMessage() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     // Process after a short delay to simulate thinking
-    setTimeout(() => {
+    setTimeout(async () => {
         typingIndicator.style.display = 'none';
 
-        // Check memory commands first
-        if (!processMemoryCommand(message) &&
-            !processLearning(message)) {
-            // If no special commands, generate normal response
-            const response = generateResponse(message);
-            respondToQuery(response);
+        // Check memory and learning commands first
+        if (processMemoryCommand(message) || processLearning(message)) {
+            // Command processed, no further action needed here as those functions call respondToQuery
+            return;
         }
-    }, 1000 + Math.random() * 1000);
+
+        // Try to generate a rule-based response
+        const ruleBasedResponse = generateResponse(message);
+
+        if (ruleBasedResponse !== null) { // Check if generateResponse provided a direct answer
+            respondToQuery(ruleBasedResponse);
+        } else {
+            // No rule-based response, try LLM
+            const llmResult = await callLlmApi(message);
+            if (llmResult.error) {
+                respondToQuery(`Error interacting with LLM: ${llmResult.error}`, true); // System message for LLM errors
+            } else if (llmResult.response && llmResult.response.trim() !== "") {
+                respondToQuery(llmResult.response);
+                 // Achievement: First time LLM is successfully used
+                checkAchievement('llmFirstResponse');
+            } else {
+                // LLM gave no response or an empty one, fallback
+                const fallbackResponse = randomChoice([
+                    "I'm not quite sure how to respond to that right now.",
+                    "That's an interesting point, but I don't have a specific comment.",
+                    "I'm still learning and couldn't process that fully. Try rephrasing?"
+                ]);
+                respondToQuery(fallbackResponse);
+            }
+        }
+    }, 1000 + Math.random() * 500); // Reduced max random delay
 }
+
 
 function generateResponse(message) {
     const lowerMsg = message.toLowerCase();
@@ -740,7 +830,8 @@ function generateResponse(message) {
             checkAchievement('definitionSeeker'); // Trigger achievement for recalling definition
             return `"${wordToDefine}" means: ${definitions[wordToDefine]}.`;
         } else {
-            return `I don't know the definition of "${wordToDefine}". You can teach me by saying "Learn: ${wordToDefine} means [definition]".`;
+            // Don't return a direct response here, let it fall through to LLM or fallback
+            // return `I don't know the definition of "${wordToDefine}". You can teach me by saying "Learn: ${wordToDefine} means [definition]".`;
         }
     }
 
@@ -782,7 +873,7 @@ function generateResponse(message) {
         return `Today is ${new Date().toLocaleDateString()}`;
     }
 
-    // Default responses
+    // Default responses for greetings - these can be primary
     if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
         return randomChoice([
             `Hello there! I'm ${botName}. How can I help you today?`,
@@ -799,11 +890,8 @@ function generateResponse(message) {
         ]);
     }
 
-    return randomChoice([
-        "I'm not sure how to respond to that. You can teach me by saying 'Remember [fact]'.",
-        "Interesting! Try asking me to remember something.",
-        "I'm still learning. Would you like to teach me something?"
-    ]);
+    // If no specific rule-based response is found, return null to indicate LLM should be tried.
+    return null;
 }
 
 function respondToQuery(response, isSystemMessage = false) {
@@ -1289,6 +1377,14 @@ const defaultAchievements = [
         name: 'Word Explorer',
         description: 'Ask the chatbot for a definition it knows.',
         icon: '📖',
+        earned: false,
+        type: 'boolean'
+    },
+    {
+        id: 'llmFirstResponse',
+        name: 'AI Powered',
+        description: 'Get your first response generated by the LLM.',
+        icon: '🚀',
         earned: false,
         type: 'boolean'
     }
